@@ -1,0 +1,32 @@
+@startuml
+
+class Player {
+    + name: String
+    + email: String
+}
+
+class Team {
+    + name: String
+}
+
+class Edition {
+    + name: String
+    + year: int
+}
+
+class Game {
+    + date: Date
+    + scoreA: int
+    + scoreB: int
+    + acceptedByA: Date
+    + acceptedByB: Date
+}
+
+Player "1" -- "*" Team : captain
+Player "1" -- "*" Team : partner
+
+Team "2" -- "*" Game
+
+Edition "1" -- "*" Team
+
+@enduml
