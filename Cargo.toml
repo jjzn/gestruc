@@ -4,4 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+chrono = "0.4.42"
 rocket = "0.5.1"
+rocket_db_pools = { version = "0.2.0", features = ["sqlx_sqlite"] }
+uuid = { version = "1.19.0", features = ["v4"] }

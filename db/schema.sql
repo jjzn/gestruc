@@ -34,3 +34,10 @@ CREATE TABLE game (
 	FOREIGN KEY (teamA) REFERENCES teams(id),
 	FOREIGN KEY (teamB) REFERENCES teams(id)
 ) STRICT;
+
+CREATE TABLE sessions (
+	id TEXT PRIMARY KEY,
+	playerId TEXT NOT NULL,
+	expires INTEGER NOT NULL,
+	FOREIGN KEY (playerId) REFERENCES players(id)
+) STRICT;
