@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 chrono = "0.4.42"
-rocket = "0.5.1"
+rocket = { version = "0.5.1", features = ["json"] }
 rocket_db_pools = { version = "0.2.0", features = ["sqlx_sqlite"] }
+rocket_dyn_templates = { version = "0.2.0", features = ["tera"] }
 uuid = { version = "1.19.0", features = ["v4"] }
