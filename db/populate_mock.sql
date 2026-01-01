@@ -10,4 +10,4 @@ INSERT INTO tournaments VALUES('Lliga UIB',2025);
 INSERT INTO teams VALUES('team01','Envit de Fenwick','user02','user01','Lliga UIB',2025);
 INSERT INTO teams VALUES('team02','Retrucs','user03','user04','Lliga UIB',2025);
 
-INSERT INTO games VALUES('game01',1767294000,0,0,NULL,1767300300,'team01','team02');
+INSERT INTO games VALUES('game01',1767294000,1445400,1579027,NULL,1767300300,'team01','team02');

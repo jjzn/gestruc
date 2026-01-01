@@ -34,10 +34,20 @@ struct Team {
 
 #[derive(Serialize)]
 #[serde(crate = "rocket::serde")]
+struct GameScore(u8, u8, u8);
+
+impl From<u32> for GameScore {
+    fn from(score: u32) -> Self {
+        Self(score as u8, (score >> 8) as u8, (score >> 16) as u8)
+    }
+}
+
+#[derive(Serialize)]
+#[serde(crate = "rocket::serde")]
 struct Game {
     id: String,
     date: DateTime<Utc>,
-    scores: [u32; 2],
+    scores: [GameScore; 2],
     accepted: [Option<DateTime<Utc>>; 2],
     team_names: [String; 2]
 }
@@ -49,11 +59,13 @@ impl TryFrom<&sqlx::sqlite::SqliteRow> for Game {
         let date = row.try_get("date")?;
         let accepted_a  = row.try_get("acceptedByA")?;
         let accepted_b = row.try_get("acceptedByB")?;
+        let scores_a: u32 = row.try_get("scoresA")?;
+        let scores_b: u32 = row.try_get("scoresB")?;
 
         Ok(Self {
             id: row.try_get("id")?,
             date: DateTime::from_timestamp(date, 0).ok_or(sqlx::Error::RowNotFound)?, // TODO: use proper error
-            scores: [row.try_get("scoresA")?, row.try_get("scoresB")?],
+            scores: [scores_a.into(), scores_b.into()],
             accepted: [DateTime::from_timestamp(accepted_a, 0), DateTime::from_timestamp(accepted_b, 0)],
             team_names: [row.try_get("teamNameA")?, row.try_get("teamNameB")?]
         })

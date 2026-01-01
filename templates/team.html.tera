@@ -17,7 +17,8 @@
         {%- if games %}
             {%- for game in games %}
         <a href="/games/{{ game.id }}"><div class="game-card">
-            <p>{{ game.team_names.0 }} vs {{ game.team_names.1 }}</p>
+            <h2>{{ game.team_names.0 }} vs {{ game.team_names.1 }}</h2>
+            <p>{{ game.date | date(format="%Y-%m-%d %H:%M", timezone="Europe/Madrid") }} &ndash; {{ game.scores.0.0 }}-{{ game.scores.1.0 }}, {{ game.scores.0.1 }}-{{ game.scores.1.1 }}, {{ game.scores.0.2 }}-{{ game.scores.1.2 }}</p>
         </div></a>
             {%- endfor %}
         {%- else %}
