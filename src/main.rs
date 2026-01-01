@@ -49,7 +49,8 @@ struct Game {
     date: DateTime<Utc>,
     scores: [GameScore; 2],
     accepted: [Option<DateTime<Utc>>; 2],
-    team_names: [String; 2]
+    team_names: [String; 2],
+    team_ids: [String; 2]
 }
 
 impl TryFrom<&sqlx::sqlite::SqliteRow> for Game {
@@ -57,24 +58,33 @@ impl TryFrom<&sqlx::sqlite::SqliteRow> for Game {
 
     fn try_from(row: &sqlx::sqlite::SqliteRow) -> Result<Self, Self::Error> {
         let date = row.try_get("date")?;
-        let accepted_a  = row.try_get("acceptedByA")?;
-        let accepted_b = row.try_get("acceptedByB")?;
         let scores_a: u32 = row.try_get("scoresA")?;
         let scores_b: u32 = row.try_get("scoresB")?;
+
+        let accepted_a  = {
+            let val = row.try_get("acceptedByA")?;
+            (val != 0).then_some(val)
+        };
+
+        let accepted_b = {
+            let val = row.try_get("acceptedByB")?;
+            (val != 0).then_some(val)
+        };
 
         Ok(Self {
             id: row.try_get("id")?,
             date: DateTime::from_timestamp(date, 0).ok_or(sqlx::Error::RowNotFound)?, // TODO: use proper error
             scores: [scores_a.into(), scores_b.into()],
-            accepted: [DateTime::from_timestamp(accepted_a, 0), DateTime::from_timestamp(accepted_b, 0)],
-            team_names: [row.try_get("teamNameA")?, row.try_get("teamNameB")?]
+            accepted: [accepted_a.map(DateTime::from_timestamp_secs).flatten(), accepted_b.map(DateTime::from_timestamp_secs).flatten()],
+            team_names: [row.try_get("teamNameA")?, row.try_get("teamNameB")?],
+            team_ids: [row.try_get("teamIdA")?, row.try_get("teamIdB")?]
         })
     }
 }
 
 impl Team {
     async fn get_games(&self, db: &mut Connection<AppData>) -> Result<Vec<Game>, sqlx::Error> {
-        let rows = sqlx::query("SELECT games.id, date, scoresA, scoresB, acceptedByA, acceptedByB, a.name AS teamNameA, b.name AS teamNameB FROM games JOIN teams AS a ON a.id = teamA JOIN teams AS b ON b.id = teamB WHERE teamA = $1 OR teamB = $1")
+        let rows = sqlx::query("SELECT games.id, date, scoresA, scoresB, acceptedByA, acceptedByB, a.name AS teamNameA, b.name AS teamNameB, a.id AS teamIdA, b.id AS teamIdB FROM games JOIN teams AS a ON a.id = teamA JOIN teams AS b ON b.id = teamB WHERE teamA = $1 OR teamB = $1")
             .bind(&self.id)
             .fetch_all(&mut ***db).await?;
 
