@@ -23,10 +23,46 @@ struct LoginData {
 
 #[derive(Serialize)]
 #[serde(crate = "rocket::serde")]
+struct Team {
+    id: String,
+    name: String,
+    captain_id: String,
+    partner_id: String,
+    tournament_name: String,
+    tournament_year: u16
+}
+
+impl TryFrom<&sqlx::sqlite::SqliteRow> for Team {
+    type Error = sqlx::Error;
+
+    fn try_from(row: &sqlx::sqlite::SqliteRow) -> Result<Self, Self::Error> {
+        Ok(Team {
+            id: row.try_get("id")?,
+            name: row.try_get("name")?,
+            captain_id: row.try_get("captainId")?,
+            partner_id: row.try_get("partnerId")?,
+            tournament_name: row.try_get("tournamentName")?,
+            tournament_year: row.try_get("tournamentYear")?
+        })
+    }
+}
+
+#[derive(Serialize)]
+#[serde(crate = "rocket::serde")]
 struct Player {
     id: String,
     email: String,
     name: String
+}
+
+impl Player {
+    async fn get_teams(&self, mut db: Connection<AppData>) -> Result<Vec<Team>, sqlx::Error> {
+        let rows = sqlx::query("SELECT id, name, captainId, partnerId, tournamentName, tournamentYear FROM teams WHERE captainId = $1 OR partnerId = $1")
+            .bind(&self.id)
+            .fetch_all(&mut **db).await?;
+
+        rows.iter().map(Team::try_from).collect()
+    }
 }
 
 #[async_trait]
@@ -70,8 +106,9 @@ impl<'r> FromRequest<'r> for Player {
 }
 
 #[get("/")]
-fn index_auth(player: Player) -> Template {
-    Template::render("index", context! { player })
+async fn index_auth(player: Player, db: Connection<AppData>) -> Template {
+    let teams = player.get_teams(db).await.ok();
+    Template::render("index", context! { player, teams })
 }
 
 #[get("/", rank = 2)]
