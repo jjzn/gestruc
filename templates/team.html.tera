@@ -11,16 +11,16 @@
         <link rel="favicon" type="image/png" sizes="32x32" href="/favicon.png"/>
 	</head>
 	<body>
-		<h1>Hola, {{ player.name }}</h1>
-        {%- if teams %}
-            {%- for team in teams %}
-        <a href="/teams/{{ team.id }}/"><div class="team-card" data-is-captain="{{ team.captain_id == player.id }}">
-            <h2>{{ team.name }}</h2>
-            <p>{{ team.tournament_name }} ({{ team.tournament_year }})</p>
+		<h1>{{ team.name }}</h1>
+        <p>{{ team.tournament_name }} ({{ team.tournament_year }})</p>
+        <p><strong>{{ captain.name }}</strong>, {{ partner.name }}</p>
+        {%- if games %}
+            {%- for game in games %}
+        <a href="/games/"><div class="game-card">
         </div></a>
             {%- endfor %}
         {%- else %}
-        <p>No tens cap equip</p>
+        <p>No tens partides jugades</p>
         {%- endif %}
     </body>
 </html>

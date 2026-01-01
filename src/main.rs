@@ -1,8 +1,8 @@
 #[macro_use] extern crate rocket;
 
-use chrono::{Duration, Utc};
+use chrono::{DateTime, Duration, Utc};
 use rocket::form::Form;
-use rocket::fs::NamedFile;
+use rocket::fs::{FileServer, NamedFile, relative};
 use rocket::http::{Cookie, CookieJar, SameSite, Status};
 use rocket::request::{Request, FromRequest, Outcome};
 use rocket::response::Redirect;
@@ -32,11 +32,62 @@ struct Team {
     tournament_year: u16
 }
 
+#[derive(Serialize)]
+#[serde(crate = "rocket::serde")]
+struct Game {
+    date: DateTime<Utc>,
+    scores: [u32; 2],
+    accepted: [Option<DateTime<Utc>>; 2],
+    team_ids: [String; 2]
+}
+
+impl TryFrom<&sqlx::sqlite::SqliteRow> for Game {
+    type Error = sqlx::Error;
+
+    fn try_from(row: &sqlx::sqlite::SqliteRow) -> Result<Self, Self::Error> {
+        let date: String = row.try_get("date")?;
+        let accepted_a: String = row.try_get("acceptedByA")?;
+        let accepted_b: String = row.try_get("acceptedByB")?;
+
+        Ok(Self {
+            date: date.parse().map_err(|_| sqlx::Error::RowNotFound)?, // TODO: use proper error
+            scores: [row.try_get("scoresA")?, row.try_get("scoresB")?],
+            accepted: [accepted_a.parse().ok(), accepted_b.parse().ok()],
+            team_ids: [row.try_get("teamA")?, row.try_get("teamB")?]
+        })
+    }
+}
+
+impl Team {
+    async fn get_games(&self, db: &mut Connection<AppData>) -> Result<Vec<Game>, sqlx::Error> {
+        let rows = sqlx::query("SELECT date, scoresA, scoresB, acceptedByA, acceptedByB, teamA, teamB FROM games WHERE teamA = $1 OR teamB = $1")
+            .bind(&self.id)
+            .fetch_all(&mut ***db).await?;
+
+        rows.iter().map(Game::try_from).collect()
+    }
+
+    async fn try_fetch(id: String, db: &mut Connection<AppData>) -> Option<Self> {
+        let row = sqlx::query("SELECT name, captainId, partnerId, tournamentName, tournamentYear FROM teams WHERE id = $1")
+            .bind(&id)
+            .fetch_one(&mut ***db).await.ok()?;
+
+        Some(Self {
+            id,
+            name: row.try_get("name").ok()?,
+            captain_id: row.try_get("captainId").ok()?,
+            partner_id: row.try_get("partnerId").ok()?,
+            tournament_name: row.try_get("tournamentName").ok()?,
+            tournament_year: row.try_get("tournamentYear").ok()?
+        })
+    }
+}
+
 impl TryFrom<&sqlx::sqlite::SqliteRow> for Team {
     type Error = sqlx::Error;
 
     fn try_from(row: &sqlx::sqlite::SqliteRow) -> Result<Self, Self::Error> {
-        Ok(Team {
+        Ok(Self {
             id: row.try_get("id")?,
             name: row.try_get("name")?,
             captain_id: row.try_get("captainId")?,
@@ -56,12 +107,20 @@ struct Player {
 }
 
 impl Player {
-    async fn get_teams(&self, mut db: Connection<AppData>) -> Result<Vec<Team>, sqlx::Error> {
+    async fn get_teams(&self, db: &mut Connection<AppData>) -> Result<Vec<Team>, sqlx::Error> {
         let rows = sqlx::query("SELECT id, name, captainId, partnerId, tournamentName, tournamentYear FROM teams WHERE captainId = $1 OR partnerId = $1")
             .bind(&self.id)
-            .fetch_all(&mut **db).await?;
+            .fetch_all(&mut ***db).await?;
 
         rows.iter().map(Team::try_from).collect()
+    }
+
+    async fn try_fetch(id: String, db: &mut Connection<AppData>) -> Option<Self> {
+        let row = sqlx::query("SELECT email, name FROM players WHERE id = $1")
+            .bind(&id)
+            .fetch_one(&mut ***db).await.ok()?;
+
+        Some(Self { id, email: row.try_get("email").ok()?, name: row.try_get("name").ok()? })
     }
 }
 
@@ -95,6 +154,7 @@ impl<'r> FromRequest<'r> for Player {
             return Outcome::Forward(Status::Unauthorized);
         }
 
+        // TODO: use Player::try_fetch
         let row = match sqlx::query("SELECT email, name FROM players WHERE id = $1").bind(&player_id)
             .fetch_one(&mut **db).await {
             Ok(row) => row,
@@ -106,14 +166,24 @@ impl<'r> FromRequest<'r> for Player {
 }
 
 #[get("/")]
-async fn index_auth(player: Player, db: Connection<AppData>) -> Template {
-    let teams = player.get_teams(db).await.ok();
+async fn index_auth(player: Player, mut db: Connection<AppData>) -> Template {
+    let teams = player.get_teams(&mut db).await.ok();
     Template::render("index", context! { player, teams })
 }
 
 #[get("/", rank = 2)]
 async fn index() -> Option<NamedFile> {
     NamedFile::open("public/index.html").await.ok()
+}
+
+#[get("/teams/<id>")]
+async fn view_team(id: &str, mut db: Connection<AppData>) -> Option<Template> {
+    let team = Team::try_fetch(id.to_string(), &mut db).await?;
+    let captain = Player::try_fetch(team.captain_id.clone(), &mut db).await?;
+    let partner = Player::try_fetch(team.partner_id.clone(), &mut db).await?;
+    let games = team.get_games(&mut db).await.ok();
+
+    Some(Template::render("team", context! { team, captain, partner, games }))
 }
 
 #[post("/login", data = "<form>")]
@@ -149,5 +219,6 @@ fn rocket() -> _ {
     rocket::build()
         .attach(AppData::init())
         .attach(Template::fairing())
-        .mount("/", routes![index, index_auth, login])
+        .mount("/", routes![index, index_auth, view_team, login])
+        .mount("/", FileServer::from(relative!("public/static")))
 }
