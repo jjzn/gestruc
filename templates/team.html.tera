@@ -4,7 +4,7 @@
         <meta charset="utf-8"/>
         <meta name="viewport" content="width=device-width,initial-scale=1"/>
         <meta name="color-scheme" content="light dark"/>
-        <title>Gestruc</title>
+        <title>{{ team.name }} | Gestruc</title>
 
         <link rel="stylesheet" href="/main.css"/>
         <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"/>
@@ -18,8 +18,8 @@
             {%- for game in games %}
         <div class="game-card">
             <h2><a href="/teams/{{ game.team_ids.0 }}">{{ game.team_names.0 }}</a> vs <a href="/teams/{{ game.team_ids.1 }}">{{ game.team_names.1 }}</a></h2>
-            <p>{{ game.date | date(format="%Y-%m-%d %H:%M", timezone="Europe/Madrid")}}</p>
-            <p>{{ game.scores.0.0 }}-{{ game.scores.1.0 }}, {{ game.scores.0.1 }}-{{ game.scores.1.1 }}, {{ game.scores.0.2 }}-{{ game.scores.1.2 }}</p>
+            <p class="date">{{ game.date | date(format="%Y-%m-%d %H:%M", timezone="Europe/Madrid")}}</p>
+            <p class="scores">{{ game.scores.0.0 }}-{{ game.scores.1.0 }}, {{ game.scores.0.1 }}-{{ game.scores.1.1 }}, {{ game.scores.0.2 }}-{{ game.scores.1.2 }}</p>
             <ul>
             {%- if game.accepted.0 %}
                 <li>{{ game.team_names.0 }}: resultat acceptat {{ game.accepted.0 | date(format="%Y-%m-%d %H:%M", timezone="Europe/Madrid") }}</li>

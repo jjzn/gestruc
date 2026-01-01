@@ -1,9 +1,160 @@
-* {
+*,
+*::before,
+*::after {
     box-sizing: border-box;
 	margin: 0;
 }
 
+:root {
+    --bg: #f7f7f8;
+    --fg: #1a1a1a;
+    --muted: #666;
+    --card-bg: #ffffff;
+    --border: #ddd;
+    --accent: #2563eb;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg: #0f1115;
+        --fg: #e6e6e6;
+        --muted: #a0a0a0;
+        --card-bg: #171a21;
+        --border: #2a2f3a;
+        --accent: #60a5fa;
+    }
+}
+
+/* TODO: adjust font */
+html {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+                 Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.5;
+}
+
 body {
-	font: 100% sans-serif;
-	padding: 2em;
+    padding: 2rem;
+    background: var(--bg);
+    color: var(--fg);
+    max-width: 900px;
+    margin-inline: auto;
+}
+
+h1 {
+    font-size: 2rem;
+    margin: 0 0 0.25rem;
+}
+
+h2 {
+    font-size: 1.25rem;
+    margin: 0 0 0.5rem;
+}
+
+p {
+    margin: 0.25rem 0;
+    color: var(--muted);
+}
+
+strong { color: var(--fg); }
+
+a {
+    color: var(--accent);
+    text-decoration: none;
+}
+
+a:hover { text-decoration: underline; }
+
+a:hover:has(.team-card) {
+    text-decoration: none;
+	/* TODO hover animation */
+}
+
+.team-card {
+	margin-top: 1.5rem;
+    padding: 1.25rem;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 0.75rem;
+}
+
+.team-card h2 {
+    margin: 0;
+    color: var(--fg);
+}
+
+.team-card p {
+    margin-top: 0.25rem;
+    color: var(--muted);
+}
+
+/* TODO */
+.team-card[data-is-captain="true"] {
+    border-color: var(--accent);
+}
+
+.game-card {
+    margin-top: 1.5rem;
+    padding: 1.25rem;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 0.75rem;
+}
+
+.game-card p { color: var(--fg); }
+
+.game-card .scores { font-weight: bold; }
+
+.game-card ul {
+    margin: 0.5rem 0 0;
+    padding-left: 1.25rem;
+}
+
+.game-card li {
+    margin: 0.25rem 0;
+    color: var(--muted);
+}
+
+form.login {
+	padding: 2rem;
+	background: var(--card-bg);
+	border: 1px solid var(--border);
+	border-radius: 0.75rem;
+	max-width: 400px;
+	margin: 2rem auto; /* TODO remove top margin */
+}
+
+form.login h1 { margin-bottom: 1.25rem; }
+
+form.login label {
+	display: block;
+	font-weight: bold;
+	margin-bottom: 0.25rem;
+}
+
+form.login input {
+	width: 100%;
+	padding: 0.5rem 1rem;
+	background: var(--bg);
+	border: 1px solid var(--border);
+	border-radius: 0.5rem;
+	margin-bottom: 1rem;
+	font: inherit;
+}
+
+form.login input:focus {
+	outline: none;
+	border-color: var(--accent);
+	box-shadow: 0 0 3px var(--accent);
+}
+
+form.login button {
+	width: 100%;
+	padding: 0.75rem 1rem;
+	margin-top: 0.5rem;
+	background: var(--accent);
+	border: none;
+	border-radius: 0.5rem;
+	font: inherit;
+	font-weight: bold;
+	cursor: pointer;
 }
