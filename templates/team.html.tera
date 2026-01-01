@@ -16,7 +16,8 @@
         <p><strong>{{ captain.name }}</strong>, {{ partner.name }}</p>
         {%- if games %}
             {%- for game in games %}
-        <a href="/games/"><div class="game-card">
+        <a href="/games/{{ game.id }}"><div class="game-card">
+            <p>{{ game.team_names.0 }} vs {{ game.team_names.1 }}</p>
         </div></a>
             {%- endfor %}
         {%- else %}

@@ -1,3 +1,5 @@
+PRAGMA foreign_keys = ON;
+
 CREATE TABLE players (
 	id TEXT PRIMARY KEY,
 	email TEXT NOT NULL UNIQUE,
@@ -23,7 +25,8 @@ CREATE TABLE teams (
 	FOREIGN KEY (tournamentName, tournamentYear) REFERENCES tournaments(name, year)
 ) STRICT;
 
-CREATE TABLE game (
+CREATE TABLE games (
+	id TEXT PRIMARY KEY,
 	date INTEGER NOT NULL,
 	scoresA INTEGER NOT NULL,
 	scoresB INTEGER NOT NULL,

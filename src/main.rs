@@ -35,32 +35,34 @@ struct Team {
 #[derive(Serialize)]
 #[serde(crate = "rocket::serde")]
 struct Game {
+    id: String,
     date: DateTime<Utc>,
     scores: [u32; 2],
     accepted: [Option<DateTime<Utc>>; 2],
-    team_ids: [String; 2]
+    team_names: [String; 2]
 }
 
 impl TryFrom<&sqlx::sqlite::SqliteRow> for Game {
     type Error = sqlx::Error;
 
     fn try_from(row: &sqlx::sqlite::SqliteRow) -> Result<Self, Self::Error> {
-        let date: String = row.try_get("date")?;
-        let accepted_a: String = row.try_get("acceptedByA")?;
-        let accepted_b: String = row.try_get("acceptedByB")?;
+        let date = row.try_get("date")?;
+        let accepted_a  = row.try_get("acceptedByA")?;
+        let accepted_b = row.try_get("acceptedByB")?;
 
         Ok(Self {
-            date: date.parse().map_err(|_| sqlx::Error::RowNotFound)?, // TODO: use proper error
+            id: row.try_get("id")?,
+            date: DateTime::from_timestamp(date, 0).ok_or(sqlx::Error::RowNotFound)?, // TODO: use proper error
             scores: [row.try_get("scoresA")?, row.try_get("scoresB")?],
-            accepted: [accepted_a.parse().ok(), accepted_b.parse().ok()],
-            team_ids: [row.try_get("teamA")?, row.try_get("teamB")?]
+            accepted: [DateTime::from_timestamp(accepted_a, 0), DateTime::from_timestamp(accepted_b, 0)],
+            team_names: [row.try_get("teamNameA")?, row.try_get("teamNameB")?]
         })
     }
 }
 
 impl Team {
     async fn get_games(&self, db: &mut Connection<AppData>) -> Result<Vec<Game>, sqlx::Error> {
-        let rows = sqlx::query("SELECT date, scoresA, scoresB, acceptedByA, acceptedByB, teamA, teamB FROM games WHERE teamA = $1 OR teamB = $1")
+        let rows = sqlx::query("SELECT games.id, date, scoresA, scoresB, acceptedByA, acceptedByB, a.name AS teamNameA, b.name AS teamNameB FROM games JOIN teams AS a ON a.id = teamA JOIN teams AS b ON b.id = teamB WHERE teamA = $1 OR teamB = $1")
             .bind(&self.id)
             .fetch_all(&mut ***db).await?;
 
