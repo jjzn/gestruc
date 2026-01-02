@@ -1,16 +1,21 @@
 #[macro_use] extern crate rocket;
 
-use chrono::{DateTime, Duration, NaiveDateTime, Utc};
-use chrono_tz::Europe;
+use chrono::{Duration, Utc};
 use rocket::form::Form;
 use rocket::fs::{FileServer, NamedFile, relative};
 use rocket::http::{Cookie, CookieJar, SameSite, Status};
-use rocket::request::{Request, FromRequest, Outcome};
 use rocket::response::Redirect;
-use rocket::serde::Serialize;
 use rocket_db_pools::{Connection, Database, sqlx};
 use rocket_db_pools::sqlx::Row;
 use rocket_dyn_templates::{Template, context};
+
+mod game;
+mod team;
+mod player;
+
+use crate::game::{Game, GameData};
+use crate::team::{Team};
+use crate::player::Player;
 
 #[derive(Database)]
 #[database("appdata")]
@@ -20,217 +25,6 @@ struct AppData(sqlx::SqlitePool);
 struct LoginData {
     email: String,
     password: String
-}
-
-#[derive(FromForm, Debug)]
-#[allow(non_snake_case)]
-struct GameData {
-    opponentName: String,
-    date: String,
-    score1A: u8,
-    score1B: u8,
-    score2A: u8,
-    score2B: u8,
-    score3A: u8,
-    score3B: u8,
-}
-
-#[derive(Serialize)]
-#[serde(crate = "rocket::serde")]
-struct Team {
-    id: String,
-    name: String,
-    captain_id: String,
-    partner_id: String,
-    tournament_name: String,
-    tournament_year: u16
-}
-
-#[derive(Serialize)]
-#[serde(crate = "rocket::serde")]
-struct GameScore(u8, u8, u8);
-
-impl From<u32> for GameScore {
-    fn from(score: u32) -> Self {
-        Self(score as u8, (score >> 8) as u8, (score >> 16) as u8)
-    }
-}
-
-impl From<GameScore> for u32 {
-    fn from(score: GameScore) -> Self {
-        (score.0 as u32) | ((score.1 as u32) << 8) | ((score.2 as u32) << 16)
-    }
-}
-
-#[derive(Serialize)]
-#[serde(crate = "rocket::serde")]
-struct Game {
-    id: String,
-    date: DateTime<Utc>,
-    scores: [GameScore; 2],
-    accepted: [Option<DateTime<Utc>>; 2],
-    team_names: [String; 2],
-    team_ids: [String; 2]
-}
-
-impl TryFrom<&sqlx::sqlite::SqliteRow> for Game {
-    type Error = sqlx::Error;
-
-    fn try_from(row: &sqlx::sqlite::SqliteRow) -> Result<Self, Self::Error> {
-        let date = row.try_get("date")?;
-        let scores_a: u32 = row.try_get("scoresA")?;
-        let scores_b: u32 = row.try_get("scoresB")?;
-
-        let accepted_a  = {
-            let val = row.try_get("acceptedByA")?;
-            (val != 0).then_some(val)
-        };
-
-        let accepted_b = {
-            let val = row.try_get("acceptedByB")?;
-            (val != 0).then_some(val)
-        };
-
-        Ok(Self {
-            id: row.try_get("id")?,
-            date: DateTime::from_timestamp(date, 0).ok_or(sqlx::Error::RowNotFound)?, // TODO: use proper error
-            scores: [scores_a.into(), scores_b.into()],
-            accepted: [accepted_a.map(DateTime::from_timestamp_secs).flatten(), accepted_b.map(DateTime::from_timestamp_secs).flatten()],
-            team_names: [row.try_get("teamNameA")?, row.try_get("teamNameB")?],
-            team_ids: [row.try_get("teamIdA")?, row.try_get("teamIdB")?]
-        })
-    }
-}
-
-impl TryFrom<Form<GameData>> for Game {
-    type Error = ();
-
-    fn try_from(form: Form<GameData>) -> Result<Self, Self::Error> {
-        let date = NaiveDateTime::parse_from_str(&form.date, "%Y-%m-%dT%H:%M")
-            .map_err(|_| ())?
-            .and_local_timezone(Europe::Madrid)
-            .unwrap().to_utc();
-
-        Ok(Self {
-            id: uuid::Uuid::new_v4().to_string(),
-            date,
-            scores: [GameScore(form.score1A, form.score2A, form.score3A), GameScore(form.score1B, form.score2B, form.score3B)],
-            accepted: [None, None],
-            team_names: ["".to_string(), form.opponentName.to_string()],
-            team_ids: ["".to_string(), "".to_string()]
-        })
-    }
-}
-
-impl Team {
-    async fn get_games(&self, db: &mut Connection<AppData>) -> Result<Vec<Game>, sqlx::Error> {
-        let rows = sqlx::query("SELECT games.id, date, scoresA, scoresB, acceptedByA, acceptedByB, a.name AS teamNameA, b.name AS teamNameB, a.id AS teamIdA, b.id AS teamIdB FROM games JOIN teams AS a ON a.id = teamA JOIN teams AS b ON b.id = teamB WHERE teamA = $1 OR teamB = $1")
-            .bind(&self.id)
-            .fetch_all(&mut ***db).await?;
-
-        rows.iter().map(Game::try_from).collect()
-    }
-
-    async fn try_fetch(id: String, db: &mut Connection<AppData>) -> Option<Self> {
-        let row = sqlx::query("SELECT name, captainId, partnerId, tournamentName, tournamentYear FROM teams WHERE id = $1")
-            .bind(&id)
-            .fetch_one(&mut ***db).await.ok()?;
-
-        Some(Self {
-            id,
-            name: row.try_get("name").ok()?,
-            captain_id: row.try_get("captainId").ok()?,
-            partner_id: row.try_get("partnerId").ok()?,
-            tournament_name: row.try_get("tournamentName").ok()?,
-            tournament_year: row.try_get("tournamentYear").ok()?
-        })
-    }
-
-    fn has_member(&self, player: Player) -> bool {
-        player.id == self.captain_id || player.id == self.partner_id
-    }
-}
-
-impl TryFrom<&sqlx::sqlite::SqliteRow> for Team {
-    type Error = sqlx::Error;
-
-    fn try_from(row: &sqlx::sqlite::SqliteRow) -> Result<Self, Self::Error> {
-        Ok(Self {
-            id: row.try_get("id")?,
-            name: row.try_get("name")?,
-            captain_id: row.try_get("captainId")?,
-            partner_id: row.try_get("partnerId")?,
-            tournament_name: row.try_get("tournamentName")?,
-            tournament_year: row.try_get("tournamentYear")?
-        })
-    }
-}
-
-#[derive(Serialize)]
-#[serde(crate = "rocket::serde")]
-struct Player {
-    id: String,
-    email: String,
-    name: String
-}
-
-impl Player {
-    async fn get_teams(&self, db: &mut Connection<AppData>) -> Result<Vec<Team>, sqlx::Error> {
-        let rows = sqlx::query("SELECT id, name, captainId, partnerId, tournamentName, tournamentYear FROM teams WHERE captainId = $1 OR partnerId = $1")
-            .bind(&self.id)
-            .fetch_all(&mut ***db).await?;
-
-        rows.iter().map(Team::try_from).collect()
-    }
-
-    async fn try_fetch(id: String, db: &mut Connection<AppData>) -> Option<Self> {
-        let row = sqlx::query("SELECT email, name FROM players WHERE id = $1")
-            .bind(&id)
-            .fetch_one(&mut ***db).await.ok()?;
-
-        Some(Self { id, email: row.try_get("email").ok()?, name: row.try_get("name").ok()? })
-    }
-}
-
-#[async_trait]
-impl<'r> FromRequest<'r> for Player {
-    type Error = ();
-
-    async fn from_request(req: &'r Request<'_>) -> Outcome<Self, Self::Error> {
-        let session_id = match req.cookies().get("sessionId") {
-            Some(cookie) => cookie.value(),
-            None => return Outcome::Forward(Status::Unauthorized)
-        };
-
-        let mut db = match req.guard::<Connection<AppData>>().await {
-            Outcome::Success(db) => db,
-            // We use Outcome::Error instead of Outcome::Forward because we want
-            // the user to know that a server error ocurred
-            _ => return Outcome::Error((Status::InternalServerError, ()))
-        };
-
-        let row = match sqlx::query("SELECT playerId, expires FROM sessions WHERE id = $1").bind(session_id)
-            .fetch_one(&mut **db).await {
-            Ok(row) => row,
-            Err(_) => return Outcome::Forward(Status::Unauthorized)
-        };
-
-        let player_id: String = row.get(0);
-        let expiration: i64 = row.get(1);
-
-        if Utc::now().timestamp() >= expiration {
-            return Outcome::Forward(Status::Unauthorized);
-        }
-
-        // TODO: use Player::try_fetch
-        let row = match sqlx::query("SELECT email, name FROM players WHERE id = $1").bind(&player_id)
-            .fetch_one(&mut **db).await {
-            Ok(row) => row,
-            Err(_) => return Outcome::Error((Status::InternalServerError, ()))
-        };
-
-        Outcome::Success(Player { id: player_id, email: row.get(0), name: row.get(1) })
-    }
 }
 
 #[get("/add-game/<teamid>")]
@@ -247,8 +41,6 @@ async fn add_game_form(teamid: &str, player: Player, mut db: Connection<AppData>
 #[post("/add-game/<teamid>", data = "<form>")]
 async fn add_game(teamid: &str, form: Form<GameData>, player: Player, mut db: Connection<AppData>) -> Result<Redirect, Status> {
     let opponent_name = form.opponentName.clone();
-
-    println!("{:?}", form);
 
     let team = Team::try_fetch(teamid.to_string(), &mut db).await.ok_or(Status::InternalServerError)?;
     let game: Game = form.try_into().map_err(|_| Status::BadRequest)?;
