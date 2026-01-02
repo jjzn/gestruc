@@ -189,6 +189,17 @@ impl<'r> FromRequest<'r> for Player {
     }
 }
 
+#[get("/add-game/<teamid>")]
+async fn add_game(teamid: &str, player: Player, mut db: Connection<AppData>) -> Result<Template, Status> {
+    let team = Team::try_fetch(teamid.to_string(), &mut db).await.ok_or(Status::InternalServerError)?;
+
+    if player.id != team.captain_id && player.id != team.partner_id {
+        return Err(Status::Unauthorized);
+    }
+
+    Ok(Template::render("add-game", context! { team }))
+}
+
 #[get("/")]
 async fn index_auth(player: Player, mut db: Connection<AppData>) -> Template {
     let teams = player.get_teams(&mut db).await.ok();
@@ -200,14 +211,24 @@ async fn index() -> Option<NamedFile> {
     NamedFile::open("public/index.html").await.ok()
 }
 
-#[get("/teams/<id>")]
-async fn view_team(id: &str, mut db: Connection<AppData>) -> Option<Template> {
+async fn view_team(id: &str, mut db: Connection<AppData>, is_team_member: bool) -> Option<Template> {
     let team = Team::try_fetch(id.to_string(), &mut db).await?;
     let captain = Player::try_fetch(team.captain_id.clone(), &mut db).await?;
     let partner = Player::try_fetch(team.partner_id.clone(), &mut db).await?;
     let games = team.get_games(&mut db).await.ok();
 
-    Some(Template::render("team", context! { team, captain, partner, games }))
+    Some(Template::render("team", context! { team, captain, partner, games, is_team_member }))
+}
+
+#[get("/teams/<id>")]
+async fn view_team_auth(id: &str, mut db: Connection<AppData>, player: Player) -> Option<Template> {
+    let team = Team::try_fetch(id.to_string(), &mut db).await?;
+    view_team(id, db, player.id == team.captain_id || player.id == team.partner_id).await
+}
+
+#[get("/teams/<id>", rank = 2)]
+async fn view_team_unauth(id: &str, db: Connection<AppData>) -> Option<Template> {
+    view_team(id, db, false).await
 }
 
 #[post("/login", data = "<form>")]
@@ -238,11 +259,19 @@ async fn login(form: Form<LoginData>, cookies: &CookieJar<'_>, mut db: Connectio
     Ok(Redirect::to("/"))
 }
 
+#[get("/logout")]
+async fn logout(player: Player, mut db: Connection<AppData>) -> Redirect {
+    let _ = sqlx::query("DELETE FROM sessions WHERE playerId = $1").bind(player.id)
+        .execute(&mut **db).await;
+
+    Redirect::to("/")
+}
+
 #[launch]
 fn rocket() -> _ {
     rocket::build()
         .attach(AppData::init())
         .attach(Template::fairing())
-        .mount("/", routes![index, index_auth, view_team, login])
+        .mount("/", routes![index, index_auth, view_team_unauth, view_team_auth, add_game, login, logout])
         .mount("/", FileServer::from(relative!("public/static")))
 }

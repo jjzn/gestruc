@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="ca">
+    <head>
+        <meta charset="utf-8"/>
+        <meta name="viewport" content="width=device-width,initial-scale=1"/>
+        <meta name="color-scheme" content="light dark"/>
+        <title>{{ team.name }} | Gestruc</title>
+
+        <link rel="stylesheet" href="/main.css"/>
+        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"/>
+        <link rel="favicon" type="image/png" sizes="32x32" href="/favicon.png"/>
+	</head>
+	<body>
+		<h1>{{ team.name }}</h1>
+        <form class="scores" action="/add-game/{{ team.id }}" method="post">
+            <label for="opponentName">Nom de l'equip contrari</label>
+            <input name="opponentName" required/>
+
+            <fieldset class="score-field">
+                <legend>Primer cantó</legend>
+
+                <label for="score1A">Punts {{ team.name }}</label>
+                <input name="score1A" type="number" min="0" max="24" required/>
+
+                <label for="score1B">Punts equip contrari</label>
+                <input name="score1B" type="number" min="0" max="24" required/>
+            </fieldset>
+
+            <fieldset class="score-field">
+                <legend>Segon cantó</legend>
+
+                <label for="score2A">Punts {{ team.name }}</label>
+                <input name="score2A" type="number" min="0" max="24" required/>
+
+                <label for="score2B">Punts equip contrari</label>
+                <input name="score2B" type="number" min="0" max="24" required/>
+            </fieldset>
+
+            <fieldset class="score-field">
+                <legend>Tercer cantó</legend>
+
+                <label for="score3A">Punts {{ team.name }}</label>
+                <input name="score3A" type="number" min="0" max="24" required/>
+
+                <label for="score3B">Punts equip contrari</label>
+                <input name="score3B" type="number" min="0" max="24" required/>
+            </fieldset>
+
+            <button class="primary">Afegir</button>
+        </form>
+    </body>
+</html>

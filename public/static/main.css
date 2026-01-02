@@ -32,6 +32,7 @@ html {
     font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
                  Roboto, Helvetica, Arial, sans-serif;
     line-height: 1.5;
+	height: 100%;
 }
 
 body {
@@ -123,20 +124,55 @@ a:hover .team-card h2 { color: var(--accent); }
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
+	gap: 1rem;
 }
 
-form.login {
+.score-field {
+	display: grid;
+	column-gap: 2rem;
+	grid-template-areas: "labelA labelB" "inputA inputB";
+	background: var(--card-bg);
+	border: 1px solid var(--border);
+	border-radius: 0.75rem;
+}
+
+.score-field > legend { font-weight: bold; }
+.score-field > label { font-weight: normal; }
+
+.score-field > label:nth-of-type(1) { grid-area: labelA; }
+.score-field > label:nth-of-type(2) { grid-area: labelB; }
+
+form.scores {
+	display: flex;
+	flex-direction: column;
+	gap: 1rem;
+}
+
+form.scores > label + input {
+	margin-top: -1rem;
+}
+
+form.login, form.scores {
 	padding: 2rem;
 	background: var(--card-bg);
 	border: 1px solid var(--border);
 	border-radius: 0.75rem;
-	max-width: 400px;
 	margin: 2rem auto; /* TODO remove top margin */
 }
 
+body:has(form.login) {
+	min-height: 100%;
+	display: grid;
+	place-items: center;
+}
+
+form.login { max-width: 400px; }
+
 form.login h1 { margin-bottom: 1.25rem; }
 
-form.login button {
+form.login input { margin-bottom: 1rem; }
+
+form button {
     width: 100%;
 	margin-top: 0.5rem;
 }
@@ -153,7 +189,6 @@ input {
 	background: var(--bg);
 	border: 1px solid var(--border);
 	border-radius: 0.5rem;
-	margin-bottom: 1rem;
 	font: inherit;
 }
 
