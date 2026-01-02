@@ -4,7 +4,7 @@
         <meta charset="utf-8"/>
         <meta name="viewport" content="width=device-width,initial-scale=1"/>
         <meta name="color-scheme" content="light dark"/>
-        <title>{{ team.name }} | Gestruc</title>
+        <title>Afegir partida - {{ team.name }} | Gestruc</title>
 
         <link rel="stylesheet" href="/main.css"/>
         <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"/>
@@ -15,6 +15,9 @@
         <form class="scores" action="/add-game/{{ team.id }}" method="post">
             <label for="opponentName">Nom de l'equip contrari</label>
             <input name="opponentName" required/>
+
+            <label for="date">Data i hora</label>
+            <input name="date" type="datetime-local" required>
 
             <fieldset class="score-field">
                 <legend>Primer cantó</legend>
@@ -46,7 +49,18 @@
                 <input name="score3B" type="number" min="0" max="24" required/>
             </fieldset>
 
-            <button class="primary">Afegir</button>
+            <button class="primary">Afegir partida</button>
         </form>
+
+        <script>
+            document.forms[0].elements["opponentName"].addEventListener("blur", function() {
+                if (!this.value)
+                    return;
+
+                const labels = document.querySelectorAll(".score-field > label:nth-of-type(2)");
+                for (const label of labels)
+                    label.textContent = `Punts ${this.value}`;
+            });
+        </script>
     </body>
 </html>

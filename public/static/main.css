@@ -131,6 +131,7 @@ a:hover .team-card h2 { color: var(--accent); }
 	display: grid;
 	column-gap: 2rem;
 	grid-template-areas: "labelA labelB" "inputA inputB";
+	grid-template-columns: 1fr 1fr;
 	background: var(--card-bg);
 	border: 1px solid var(--border);
 	border-radius: 0.75rem;

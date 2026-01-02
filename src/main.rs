@@ -1,6 +1,7 @@
 #[macro_use] extern crate rocket;
 
-use chrono::{DateTime, Duration, Utc};
+use chrono::{DateTime, Duration, NaiveDateTime, Utc};
+use chrono_tz::Europe;
 use rocket::form::Form;
 use rocket::fs::{FileServer, NamedFile, relative};
 use rocket::http::{Cookie, CookieJar, SameSite, Status};
@@ -21,6 +22,19 @@ struct LoginData {
     password: String
 }
 
+#[derive(FromForm, Debug)]
+#[allow(non_snake_case)]
+struct GameData {
+    opponentName: String,
+    date: String,
+    score1A: u8,
+    score1B: u8,
+    score2A: u8,
+    score2B: u8,
+    score3A: u8,
+    score3B: u8,
+}
+
 #[derive(Serialize)]
 #[serde(crate = "rocket::serde")]
 struct Team {
@@ -39,6 +53,12 @@ struct GameScore(u8, u8, u8);
 impl From<u32> for GameScore {
     fn from(score: u32) -> Self {
         Self(score as u8, (score >> 8) as u8, (score >> 16) as u8)
+    }
+}
+
+impl From<GameScore> for u32 {
+    fn from(score: GameScore) -> Self {
+        (score.0 as u32) | ((score.1 as u32) << 8) | ((score.2 as u32) << 16)
     }
 }
 
@@ -82,6 +102,26 @@ impl TryFrom<&sqlx::sqlite::SqliteRow> for Game {
     }
 }
 
+impl TryFrom<Form<GameData>> for Game {
+    type Error = ();
+
+    fn try_from(form: Form<GameData>) -> Result<Self, Self::Error> {
+        let date = NaiveDateTime::parse_from_str(&form.date, "%Y-%m-%dT%H:%M")
+            .map_err(|_| ())?
+            .and_local_timezone(Europe::Madrid)
+            .unwrap().to_utc();
+
+        Ok(Self {
+            id: uuid::Uuid::new_v4().to_string(),
+            date,
+            scores: [GameScore(form.score1A, form.score2A, form.score3A), GameScore(form.score1B, form.score2B, form.score3B)],
+            accepted: [None, None],
+            team_names: ["".to_string(), form.opponentName.to_string()],
+            team_ids: ["".to_string(), "".to_string()]
+        })
+    }
+}
+
 impl Team {
     async fn get_games(&self, db: &mut Connection<AppData>) -> Result<Vec<Game>, sqlx::Error> {
         let rows = sqlx::query("SELECT games.id, date, scoresA, scoresB, acceptedByA, acceptedByB, a.name AS teamNameA, b.name AS teamNameB, a.id AS teamIdA, b.id AS teamIdB FROM games JOIN teams AS a ON a.id = teamA JOIN teams AS b ON b.id = teamB WHERE teamA = $1 OR teamB = $1")
@@ -104,6 +144,10 @@ impl Team {
             tournament_name: row.try_get("tournamentName").ok()?,
             tournament_year: row.try_get("tournamentYear").ok()?
         })
+    }
+
+    fn has_member(&self, player: Player) -> bool {
+        player.id == self.captain_id || player.id == self.partner_id
     }
 }
 
@@ -190,14 +234,57 @@ impl<'r> FromRequest<'r> for Player {
 }
 
 #[get("/add-game/<teamid>")]
-async fn add_game(teamid: &str, player: Player, mut db: Connection<AppData>) -> Result<Template, Status> {
+async fn add_game_form(teamid: &str, player: Player, mut db: Connection<AppData>) -> Result<Template, Status> {
     let team = Team::try_fetch(teamid.to_string(), &mut db).await.ok_or(Status::InternalServerError)?;
 
-    if player.id != team.captain_id && player.id != team.partner_id {
+    if !team.has_member(player) {
         return Err(Status::Unauthorized);
     }
 
     Ok(Template::render("add-game", context! { team }))
+}
+
+#[post("/add-game/<teamid>", data = "<form>")]
+async fn add_game(teamid: &str, form: Form<GameData>, player: Player, mut db: Connection<AppData>) -> Result<Redirect, Status> {
+    let opponent_name = form.opponentName.clone();
+
+    println!("{:?}", form);
+
+    let team = Team::try_fetch(teamid.to_string(), &mut db).await.ok_or(Status::InternalServerError)?;
+    let game: Game = form.try_into().map_err(|_| Status::BadRequest)?;
+
+    if !team.has_member(player) {
+        return Err(Status::Unauthorized);
+    }
+
+    // TODO: enforce that team names are unique to each tournament
+    let opponent_id: String = {
+        let row = sqlx::query("SELECT id FROM teams WHERE name = $1 AND tournamentName = $2 AND tournamentYear = $3")
+            .bind(opponent_name)
+            .bind(team.tournament_name)
+            .bind(team.tournament_year)
+            .fetch_one(&mut **db).await
+            .map_err(|_| Status::BadRequest)?; // TODO: check on the client side first + add nicer
+                                               // error message
+
+        row.try_get("id").map_err(|_| Status::InternalServerError)?
+    };
+
+    let scores = game.scores.map(u32::from);
+
+    sqlx::query("INSERT INTO games (id, date, scoresA, scoresB, acceptedByA, acceptedByB, teamA, teamB) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)")
+        .bind(game.id)
+        .bind(game.date.timestamp())
+        .bind(scores[0])
+        .bind(scores[1])
+        .bind(game.accepted[0].map(|dt| dt.timestamp()))
+        .bind(game.accepted[1].map(|dt| dt.timestamp()))
+        .bind(&team.id)
+        .bind(opponent_id)
+        .execute(&mut **db).await
+        .map_err(|_| Status::InternalServerError)?;
+
+    Ok(Redirect::to(format!("/teams/{}", team.id)))
 }
 
 #[get("/")]
@@ -223,7 +310,7 @@ async fn view_team(id: &str, mut db: Connection<AppData>, is_team_member: bool) 
 #[get("/teams/<id>")]
 async fn view_team_auth(id: &str, mut db: Connection<AppData>, player: Player) -> Option<Template> {
     let team = Team::try_fetch(id.to_string(), &mut db).await?;
-    view_team(id, db, player.id == team.captain_id || player.id == team.partner_id).await
+    view_team(id, db, team.has_member(player)).await
 }
 
 #[get("/teams/<id>", rank = 2)]
@@ -272,6 +359,6 @@ fn rocket() -> _ {
     rocket::build()
         .attach(AppData::init())
         .attach(Template::fairing())
-        .mount("/", routes![index, index_auth, view_team_unauth, view_team_auth, add_game, login, logout])
+        .mount("/", routes![index, index_auth, view_team_unauth, view_team_auth, add_game_form, add_game, login, logout])
         .mount("/", FileServer::from(relative!("public/static")))
 }
