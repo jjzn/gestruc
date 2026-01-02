@@ -12,8 +12,12 @@
 	</head>
 	<body>
 		<h1>{{ team.name }}</h1>
-        <p>{{ team.tournament_name }} ({{ team.tournament_year }})</p>
-        <p><strong>{{ captain.name }}</strong>, {{ partner.name }}</p>
+
+        <div class="stack-horiz">
+            <p>{{ team.tournament_name }} ({{ team.tournament_year }})<br/><strong>{{ captain.name }}</strong>, {{ partner.name }}</p>
+            <a href="/games/add" class="btn">Afegir partida</a>
+        </div>
+
         {%- if games %}
             {%- for game in games %}
         <div class="game-card">

@@ -12,6 +12,7 @@
     --card-bg: #ffffff;
     --border: #ddd;
     --accent: #2563eb;
+	--accent-fg: var(--bg);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -22,6 +23,7 @@
         --card-bg: #171a21;
         --border: #2a2f3a;
         --accent: #60a5fa;
+		--accent-fg: var(--fg);
     }
 }
 
@@ -36,7 +38,7 @@ body {
     padding: 2rem;
     background: var(--bg);
     color: var(--fg);
-    max-width: 900px;
+    max-width: 900px; /* TODO fix, body should fill entire screen */
     margin-inline: auto;
 }
 
@@ -69,6 +71,8 @@ a:hover:has(.team-card) {
 	/* TODO hover animation */
 }
 
+a:hover .team-card h2 { color: var(--accent); }
+
 .team-card {
 	margin-top: 1.5rem;
     padding: 1.25rem;
@@ -80,6 +84,7 @@ a:hover:has(.team-card) {
 .team-card h2 {
     margin: 0;
     color: var(--fg);
+	transition: color .2s;
 }
 
 .team-card p {
@@ -114,6 +119,12 @@ a:hover:has(.team-card) {
     color: var(--muted);
 }
 
+.stack-horiz {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+}
+
 form.login {
 	padding: 2rem;
 	background: var(--card-bg);
@@ -125,13 +136,18 @@ form.login {
 
 form.login h1 { margin-bottom: 1.25rem; }
 
-form.login label {
+form.login button {
+    width: 100%;
+	margin-top: 0.5rem;
+}
+
+label {
 	display: block;
 	font-weight: bold;
 	margin-bottom: 0.25rem;
 }
 
-form.login input {
+input {
 	width: 100%;
 	padding: 0.5rem 1rem;
 	background: var(--bg);
@@ -141,20 +157,36 @@ form.login input {
 	font: inherit;
 }
 
-form.login input:focus {
+input:focus {
 	outline: none;
 	border-color: var(--accent);
 	box-shadow: 0 0 3px var(--accent);
 }
 
-form.login button {
-	width: 100%;
+button, .btn {
 	padding: 0.75rem 1rem;
-	margin-top: 0.5rem;
-	background: var(--accent);
-	border: none;
+	background: var(--card-bg);
+	color: var(--fg);
+	border: 1px solid var(--border);
 	border-radius: 0.5rem;
 	font: inherit;
 	font-weight: bold;
+	text-decoration: none;
 	cursor: pointer;
+	transition: background 0.2s;
+}
+
+button:hover, .btn:hover {
+	text-decoration: none;
+	background: color-mix(in srgb, var(--card-bg), var(--fg) 10%);
+}
+
+button.primary, .btn.primary {
+	background: var(--accent);
+	color: var(--accent-fg);
+	border: none;
+}
+
+button.primary:hover, .btn.primary:hover {
+	background: color-mix(in srgb, var(--accent), var(--fg) 40%);
 }
