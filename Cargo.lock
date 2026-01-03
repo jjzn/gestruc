@@ -629,6 +629,7 @@ version = "0.1.0"
 dependencies = [
  "chrono",
  "chrono-tz 0.10.4",
+ "regex",
  "rocket",
  "rocket_db_pools",
  "rocket_dyn_templates",

@@ -1,10 +1,16 @@
 #[macro_use] extern crate rocket;
 
 use chrono::{Duration, Utc};
+use regex::Regex;
+use rocket::State;
+use rocket::fairing::AdHoc;
+use rocket::figment::{Figment, Profile};
+use rocket::figment::providers::{Toml, Format};
 use rocket::form::Form;
 use rocket::fs::{FileServer, NamedFile, relative};
 use rocket::http::{Cookie, CookieJar, SameSite, Status};
 use rocket::response::Redirect;
+use rocket::serde::{Deserialize, Deserializer, de::Error};
 use rocket_db_pools::{Connection, Database, sqlx};
 use rocket_db_pools::sqlx::Row;
 use rocket_dyn_templates::{Template, context};
@@ -20,6 +26,31 @@ use crate::player::Player;
 #[derive(Database)]
 #[database("appdata")]
 struct AppData(sqlx::SqlitePool);
+
+#[derive(Deserialize)]
+#[serde(crate = "rocket::serde")]
+struct AppConfig {
+    #[serde(deserialize_with = "deserialize_duration")]
+    session_duration: Duration
+}
+
+fn deserialize_duration<'de, D>(deserializer: D) -> Result<Duration, D::Error>
+where
+    D: Deserializer<'de>
+{
+    let re = Regex::new(r"^(?:(\d)+h)?(?:(\d)+m)$").unwrap(); // Should never fail
+    let s = String::deserialize(deserializer)?;
+    let caps = re.captures(&s)
+        .ok_or(D::Error::custom("invalid format"))?;
+
+    let hours = caps.get(1).map_or(Ok(0), |m|
+        m.as_str().parse().map_err(|_| D::Error::custom("expected an integer")))?;
+
+    let minutes = caps.get(2).map_or(Ok(0), |m|
+        m.as_str().parse().map_err(|_| D::Error::custom("expected an integer")))?;
+
+    Ok(Duration::hours(hours) + Duration::minutes(minutes))
+}
 
 #[derive(FromForm)]
 struct LoginData {
@@ -111,7 +142,7 @@ async fn view_team_unauth(id: &str, db: Connection<AppData>) -> Option<Template>
 }
 
 #[post("/login", data = "<form>")]
-async fn login(form: Form<LoginData>, cookies: &CookieJar<'_>, mut db: Connection<AppData>) -> Result<Redirect, Status> {
+async fn login(form: Form<LoginData>, cookies: &CookieJar<'_>, config: &State<AppConfig>, mut db: Connection<AppData>) -> Result<Redirect, Status> {
     let row = sqlx::query("SELECT password, id FROM players WHERE email = $1").bind(&form.email)
         .fetch_one(&mut **db).await
         .or(Err(Status::Unauthorized))?;
@@ -122,7 +153,7 @@ async fn login(form: Form<LoginData>, cookies: &CookieJar<'_>, mut db: Connectio
 
     let player_id: &str = row.get(1);
     let session = uuid::Uuid::new_v4().to_string();
-    let expiration = Utc::now() + Duration::hours(1);
+    let expiration = Utc::now() + config.session_duration;
 
     sqlx::query("INSERT INTO sessions (id, playerId, expires) VALUES ($1, $2, $3)")
         .bind(&session).bind(player_id).bind(expiration.timestamp())
@@ -148,9 +179,14 @@ async fn logout(player: Player, mut db: Connection<AppData>) -> Redirect {
 
 #[launch]
 fn rocket() -> _ {
-    rocket::build()
+    let figment = Figment::from(rocket::Config::figment())
+        .merge(Toml::file("App.toml").nested())
+        .select(Profile::from_env_or("APP_PROFILE", "default"));
+
+    rocket::custom(figment)
         .attach(AppData::init())
         .attach(Template::fairing())
+        .attach(AdHoc::config::<AppConfig>())
         .mount("/", routes![index, index_auth, view_team_unauth, view_team_auth, add_game_form, add_game, login, logout])
         .mount("/", FileServer::from(relative!("public/static")))
 }
