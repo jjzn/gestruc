@@ -38,7 +38,7 @@ fn deserialize_duration<'de, D>(deserializer: D) -> Result<Duration, D::Error>
 where
     D: Deserializer<'de>
 {
-    let re = Regex::new(r"^(?:(\d)+h)?(?:(\d)+m)$").unwrap(); // Should never fail
+    let re = Regex::new(r"^(?:(\d+)h)?(?:(\d+)m)?$").unwrap(); // Should never fail
     let s = String::deserialize(deserializer)?;
     let caps = re.captures(&s)
         .ok_or(D::Error::custom("invalid format"))?;
