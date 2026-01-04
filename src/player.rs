@@ -6,6 +6,7 @@ use rocket_db_pools::{Connection, sqlx};
 use rocket_db_pools::sqlx::Row;
 
 use crate::AppData;
+use crate::error::AppError;
 use crate::team::Team;
 
 #[derive(Serialize)]
@@ -17,7 +18,7 @@ pub struct Player {
 }
 
 impl Player {
-    pub async fn get_teams(&self, db: &mut Connection<AppData>) -> Result<Vec<Team>, sqlx::Error> {
+    pub async fn get_teams(&self, db: &mut Connection<AppData>) -> Result<Vec<Team>, AppError> {
         let rows = sqlx::query("SELECT id, name, captainId, partnerId, tournamentName, tournamentYear FROM teams WHERE captainId = $1 OR partnerId = $1")
             .bind(&self.id)
             .fetch_all(&mut ***db).await?;
@@ -25,6 +26,7 @@ impl Player {
         rows.iter().map(Team::try_from).collect()
     }
 
+    // TODO: should probably return Result<Self, AppError>
     pub async fn try_fetch(id: String, db: &mut Connection<AppData>) -> Option<Self> {
         let row = sqlx::query("SELECT email, name FROM players WHERE id = $1")
             .bind(&id)
@@ -36,6 +38,7 @@ impl Player {
 
 #[async_trait]
 impl<'r> FromRequest<'r> for Player {
+    // We do not need to display detailed app errors, we only care about the HTTP status
     type Error = ();
 
     async fn from_request(req: &'r Request<'_>) -> Outcome<Self, Self::Error> {

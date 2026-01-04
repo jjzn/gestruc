@@ -3,6 +3,8 @@ use chrono_tz::Europe;
 use rocket::{form::Form, serde::Serialize};
 use rocket_db_pools::sqlx::{self, Row};
 
+use crate::error::AppError;
+
 #[derive(FromForm)]
 #[allow(non_snake_case)]
 pub struct GameData {
@@ -43,29 +45,47 @@ pub struct Game {
     pub team_ids: [String; 2]
 }
 
+struct Timestamp(i64); // Silly little wrapper so that I impl From<i64>
+
+impl From<i64> for Timestamp {
+    fn from(ts: i64) -> Self {
+        Self(ts)
+    }
+}
+
+impl TryFrom<Timestamp> for DateTime<Utc> {
+    type Error = AppError;
+
+    fn try_from(ts: Timestamp) -> Result<Self, Self::Error> {
+        DateTime::from_timestamp_secs(ts.0).ok_or(AppError::InvalidTimestamp(ts.0))
+    }
+}
+
 impl TryFrom<&sqlx::sqlite::SqliteRow> for Game {
-    type Error = sqlx::Error;
+    type Error = AppError;
 
     fn try_from(row: &sqlx::sqlite::SqliteRow) -> Result<Self, Self::Error> {
-        let date = row.try_get("date")?;
+        let date: i64 = row.try_get("date")?;
         let scores_a: u32 = row.try_get("scoresA")?;
         let scores_b: u32 = row.try_get("scoresB")?;
 
-        let accepted_a  = {
-            let val = row.try_get("acceptedByA")?;
-            (val != 0).then_some(val)
+        let accepted_a: Option<Timestamp>  = {
+            let val: i64 = row.try_get("acceptedByA")?;
+            (val != 0).then_some(val.into())
         };
 
-        let accepted_b = {
-            let val = row.try_get("acceptedByB")?;
-            (val != 0).then_some(val)
+        let accepted_b: Option<Timestamp> = {
+            let val: i64 = row.try_get("acceptedByB")?;
+            (val != 0).then_some(val.into())
         };
 
         Ok(Self {
             id: row.try_get("id")?,
-            date: DateTime::from_timestamp(date, 0).ok_or(sqlx::Error::RowNotFound)?, // TODO: use proper error
+            date: Timestamp::from(date).try_into()?,
             scores: [scores_a.into(), scores_b.into()],
-            accepted: [accepted_a.map(DateTime::from_timestamp_secs).flatten(), accepted_b.map(DateTime::from_timestamp_secs).flatten()],
+            accepted: [
+                accepted_a.map(DateTime::try_from).transpose()?,
+                accepted_b.map(DateTime::try_from).transpose()?],
             team_names: [row.try_get("teamNameA")?, row.try_get("teamNameB")?],
             team_ids: [row.try_get("teamIdA")?, row.try_get("teamIdB")?]
         })
@@ -73,11 +93,13 @@ impl TryFrom<&sqlx::sqlite::SqliteRow> for Game {
 }
 
 impl TryFrom<Form<GameData>> for Game {
-    type Error = ();
+    type Error = AppError;
 
     fn try_from(form: Form<GameData>) -> Result<Self, Self::Error> {
+        let fmt = "%Y-%m-%dT%H:%M";
+
         let date = NaiveDateTime::parse_from_str(&form.date, "%Y-%m-%dT%H:%M")
-            .map_err(|_| ())?
+            .map_err(|_| AppError::InvalidDateTime(form.date.clone(), fmt.to_string()))?
             .and_local_timezone(Europe::Madrid)
             .unwrap().to_utc();
 

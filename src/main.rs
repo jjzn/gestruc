@@ -18,6 +18,7 @@ use rocket_dyn_templates::{Template, context};
 mod game;
 mod team;
 mod player;
+mod error;
 
 use crate::game::{Game, GameData};
 use crate::team::{Team};
