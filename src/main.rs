@@ -67,7 +67,15 @@ async fn add_game_form(teamid: &str, player: Player, mut db: Connection<AppData>
         return Err(Status::Unauthorized);
     }
 
-    Ok(Template::render("add-game", context! { team }))
+    let other_teams: Vec<String> = sqlx::query("SELECT name FROM teams WHERE tournamentName = $1 AND tournamentEdition = $2 AND name != $3")
+        .bind(&team.tournament_name)
+        .bind(&team.tournament_edition)
+        .bind(&team.name)
+        .fetch_all(&mut **db).await
+        .map_err(|_| Status::InternalServerError)?
+        .iter().map(|row| row.get("name")).collect();
+
+    Ok(Template::render("add-game", context! { team, other_teams }))
 }
 
 #[post("/add-game/<teamid>", data = "<form>")]

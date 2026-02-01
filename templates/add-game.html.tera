@@ -14,7 +14,7 @@
 		<h1>{{ team.name }}</h1>
         <form class="scores" action="/add-game/{{ team.id }}" method="post">
             <label for="opponentName">Nom de l'equip contrari</label>
-            <input name="opponentName" required/>
+            <input name="opponentName" list="team-names" required/>
 
             <label for="date">Data i hora</label>
             <input name="date" type="datetime-local" required>
@@ -50,16 +50,21 @@
             </fieldset>
 
             <button class="primary">Afegir partida</button>
+
+            <datalist id="team-names">
+                {%- for team in other_teams %}
+                <option value="{{ team }}"></option>
+                {%- endfor %}
+            </datalist>
         </form>
 
         <script>
             document.forms[0].elements["opponentName"].addEventListener("blur", function() {
-                if (!this.value)
-                    return;
+                const label_text = this.value ? `Punts ${this.value}` : "Punts equip contrari";
 
                 const labels = document.querySelectorAll(".score-field > label:nth-of-type(2)");
                 for (const label of labels)
-                    label.textContent = `Punts ${this.value}`;
+                    label.textContent = label_text;
             });
         </script>
     </body>
