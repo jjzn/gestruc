@@ -19,7 +19,7 @@ pub struct Player {
 
 impl Player {
     pub async fn get_teams(&self, db: &mut Connection<AppData>) -> Result<Vec<Team>, AppError> {
-        let rows = sqlx::query("SELECT id, name, captainId, partnerId, tournamentName, tournamentYear FROM teams WHERE captainId = $1 OR partnerId = $1")
+        let rows = sqlx::query("SELECT id, name, captainId, partnerId, tournamentName, tournamentEdition FROM teams WHERE captainId = $1 OR partnerId = $1")
             .bind(&self.id)
             .fetch_all(&mut ***db).await?;
 

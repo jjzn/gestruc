@@ -83,10 +83,10 @@ async fn add_game(teamid: &str, form: Form<GameData>, player: Player, mut db: Co
 
     // TODO: enforce that team names are unique to each tournament
     let opponent_id: String = {
-        let row = sqlx::query("SELECT id FROM teams WHERE name = $1 AND tournamentName = $2 AND tournamentYear = $3")
+        let row = sqlx::query("SELECT id FROM teams WHERE name = $1 AND tournamentName = $2 AND tournamentEdition = $3")
             .bind(opponent_name)
             .bind(team.tournament_name)
-            .bind(team.tournament_year)
+            .bind(team.tournament_edition)
             .fetch_one(&mut **db).await
             .map_err(|_| Status::BadRequest)?; // TODO: check on the client side first + add nicer
                                                // error message

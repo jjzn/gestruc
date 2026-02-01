@@ -14,7 +14,7 @@
 		<h1>{{ team.name }}</h1>
 
         <div class="stack-horiz">
-            <p>{{ team.tournament_name }} ({{ team.tournament_year }})<br/><strong>{{ captain.name }}</strong>, {{ partner.name }}</p>
+            <p>{{ team.tournament_name }} ({{ team.tournament_edition }})<br/><strong>{{ captain.name }}</strong>, {{ partner.name }}</p>
             {% if is_team_member %}<a href="/add-game/{{ team.id }}" class="btn">Afegir partida</a>{% endif %}
         </div>
 

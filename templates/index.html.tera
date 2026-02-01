@@ -20,7 +20,7 @@
             {%- for team in teams %}
         <a href="/teams/{{ team.id }}"><div class="team-card" data-is-captain="{{ team.captain_id == player.id }}">
             <h2>{{ team.name }}</h2>
-            <p>{{ team.tournament_name }} ({{ team.tournament_year }})</p>
+            <p>{{ team.tournament_name }} ({{ team.tournament_edition }})</p>
         </div></a>
             {%- endfor %}
         {%- else %}

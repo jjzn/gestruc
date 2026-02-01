@@ -9,8 +9,8 @@ CREATE TABLE players (
 
 CREATE TABLE tournaments (
 	name TEXT NOT NULL,
-	year INTEGER NOT NULL,
-	PRIMARY KEY (name, year)
+	edition TEXT NOT NULL,
+	PRIMARY KEY (name, edition)
 ) STRICT;
 
 CREATE TABLE teams (
@@ -19,10 +19,10 @@ CREATE TABLE teams (
 	captainId TEXT NOT NULL,
 	partnerId TEXT NOT NULL,
 	tournamentName TEXT NOT NULL,
-	tournamentYear INTEGER NOT NULL,
+	tournamentEdition TEXT NOT NULL,
 	FOREIGN KEY (captainId) REFERENCES players(id),
 	FOREIGN KEY (partnerId) REFERENCES players(id),
-	FOREIGN KEY (tournamentName, tournamentYear) REFERENCES tournaments(name, year)
+	FOREIGN KEY (tournamentName, tournamentEdition) REFERENCES tournaments(name, edition)
 ) STRICT;
 
 CREATE TABLE games (
