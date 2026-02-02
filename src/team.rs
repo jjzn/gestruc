@@ -43,7 +43,7 @@ impl Team {
         })
     }
 
-    pub fn has_member(&self, player: Player) -> bool {
+    pub fn has_member(&self, player: &Player) -> bool {
         player.id == self.captain_id || player.id == self.partner_id
     }
 }

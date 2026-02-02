@@ -63,7 +63,7 @@ struct LoginData {
 async fn add_game_form(teamid: &str, player: Player, mut db: Connection<AppData>) -> Result<Template, Status> {
     let team = Team::try_fetch(teamid.to_string(), &mut db).await.ok_or(Status::InternalServerError)?;
 
-    if !team.has_member(player) {
+    if !team.has_member(&player) {
         return Err(Status::Unauthorized);
     }
 
@@ -85,7 +85,7 @@ async fn add_game(teamid: &str, form: Form<GameData>, player: Player, mut db: Co
     let team = Team::try_fetch(teamid.to_string(), &mut db).await.ok_or(Status::InternalServerError)?;
     let game: Game = form.try_into().map_err(|_| Status::BadRequest)?;
 
-    if !team.has_member(player) {
+    if !team.has_member(&player) {
         return Err(Status::Unauthorized);
     }
 
@@ -130,24 +130,24 @@ async fn index() -> Option<NamedFile> {
     NamedFile::open("public/index.html").await.ok()
 }
 
-async fn view_team(id: &str, mut db: Connection<AppData>, is_team_member: bool) -> Option<Template> {
+async fn view_team(id: &str, mut db: Connection<AppData>, is_team_member: bool, is_captain: bool) -> Option<Template> {
     let team = Team::try_fetch(id.to_string(), &mut db).await?;
     let captain = Player::try_fetch(team.captain_id.clone(), &mut db).await?;
     let partner = Player::try_fetch(team.partner_id.clone(), &mut db).await?;
     let games = team.get_games(&mut db).await.ok();
 
-    Some(Template::render("team", context! { team, captain, partner, games, is_team_member }))
+    Some(Template::render("team", context! { team, captain, partner, games, is_team_member, is_captain }))
 }
 
 #[get("/teams/<id>")]
 async fn view_team_auth(id: &str, mut db: Connection<AppData>, player: Player) -> Option<Template> {
     let team = Team::try_fetch(id.to_string(), &mut db).await?;
-    view_team(id, db, team.has_member(player)).await
+    view_team(id, db, team.has_member(&player), player.id == team.captain_id).await
 }
 
 #[get("/teams/<id>", rank = 2)]
 async fn view_team_unauth(id: &str, db: Connection<AppData>) -> Option<Template> {
-    view_team(id, db, false).await
+    view_team(id, db, false, false).await
 }
 
 #[post("/login", data = "<form>")]
