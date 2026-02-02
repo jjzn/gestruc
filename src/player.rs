@@ -26,13 +26,12 @@ impl Player {
         rows.iter().map(Team::try_from).collect()
     }
 
-    // TODO: should probably return Result<Self, AppError>
-    pub async fn try_fetch(id: String, db: &mut Connection<AppData>) -> Option<Self> {
+    pub async fn try_fetch(id: String, db: &mut Connection<AppData>) -> Result<Self, AppError> {
         let row = sqlx::query("SELECT email, name FROM players WHERE id = $1")
             .bind(&id)
-            .fetch_one(&mut ***db).await.ok()?;
+            .fetch_one(&mut ***db).await?;
 
-        Some(Self { id, email: row.try_get("email").ok()?, name: row.try_get("name").ok()? })
+        Ok(Self { id, email: row.try_get("email")?, name: row.try_get("name")? })
     }
 }
 

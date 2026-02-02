@@ -27,19 +27,18 @@ impl Team {
         rows.iter().map(Game::try_from).collect()
     }
 
-    // TODO: should probably return Result<Self, AppError>
-    pub async fn try_fetch(id: String, db: &mut Connection<AppData>) -> Option<Self> {
+    pub async fn try_fetch(id: String, db: &mut Connection<AppData>) -> Result<Self, AppError> {
         let row = sqlx::query("SELECT name, captainId, partnerId, tournamentName, tournamentEdition FROM teams WHERE id = $1")
             .bind(&id)
-            .fetch_one(&mut ***db).await.ok()?;
+            .fetch_one(&mut ***db).await?;
 
-        Some(Self {
+        Ok(Self {
             id,
-            name: row.try_get("name").ok()?,
-            captain_id: row.try_get("captainId").ok()?,
-            partner_id: row.try_get("partnerId").ok()?,
-            tournament_name: row.try_get("tournamentName").ok()?,
-            tournament_edition: row.try_get("tournamentEdition").ok()?
+            name: row.try_get("name")?,
+            captain_id: row.try_get("captainId")?,
+            partner_id: row.try_get("partnerId")?,
+            tournament_name: row.try_get("tournamentName")?,
+            tournament_edition: row.try_get("tournamentEdition")?
         })
     }
 
