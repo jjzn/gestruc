@@ -93,7 +93,18 @@ a:hover .team-card h2 { color: var(--accent); }
     color: var(--muted);
 }
 
+.team-card[data-is-captain="true"] { position: relative; }
 
+.team-card[data-is-captain="true"]::after {
+    content: "Capità";
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    font-family: monospace;
+
+    padding: 0.25rem 0.5rem;
+    border: 1px solid var(--accent);
+    border-radius: 0.5rem;
 }
 
 .game-card p { color: var(--fg); }
