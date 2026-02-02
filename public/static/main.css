@@ -74,8 +74,8 @@ a:hover:has(.team-card) {
 
 a:hover .team-card h2 { color: var(--accent); }
 
-.team-card {
-	margin-top: 1.5rem;
+.card {
+    margin-top: 1.5rem;
     padding: 1.25rem;
     background: var(--card-bg);
     border: 1px solid var(--border);
@@ -93,17 +93,7 @@ a:hover .team-card h2 { color: var(--accent); }
     color: var(--muted);
 }
 
-/* TODO */
-.team-card[data-is-captain="true"] {
-    border-color: var(--accent);
-}
 
-.game-card {
-    margin-top: 1.5rem;
-    padding: 1.25rem;
-    background: var(--card-bg);
-    border: 1px solid var(--border);
-    border-radius: 0.75rem;
 }
 
 .game-card p { color: var(--fg); }
@@ -200,6 +190,7 @@ input:focus {
 }
 
 button, .btn {
+    display: inline-block;
 	padding: 0.75rem 1rem;
 	background: var(--card-bg);
 	color: var(--fg);
@@ -238,4 +229,16 @@ table.scores thead { font-weight: bold; }
 table.scores td {
     border: 1px solid currentcolor;
     padding: 0.5rem;
+}
+
+.accepted-dates {
+    display: flex;
+    flex-direction: row;
+    gap: 1rem;
+}
+
+.accepted-dates > * { flex: 1; }
+
+.accepted-dates p:first-child {
+    color: var(--fg);
 }
