@@ -226,3 +226,16 @@ button.primary, .btn.primary {
 button.primary:hover, .btn.primary:hover {
 	background: color-mix(in srgb, var(--accent), var(--fg) 40%);
 }
+
+table.scores {
+    text-align: center;
+    border-collapse: collapse;
+    background: var(--card-bg);
+}
+
+table.scores thead { font-weight: bold; }
+
+table.scores td {
+    border: 1px solid currentcolor;
+    padding: 0.5rem;
+}

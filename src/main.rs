@@ -154,7 +154,19 @@ async fn view_team_unauth(id: &str, db: Connection<AppData>) -> Result<Template,
 #[get("/games/<id>")]
 async fn view_game(id: &str, mut db: Connection<AppData>) -> Result<Template, AppError> {
     let game = Game::try_fetch(id.to_string(), &mut db).await?;
-    Ok(Template::render("game", context! { game }))
+    let teams = [
+        Team::try_fetch(game.team_ids[0].clone(), &mut db).await?,
+        Team::try_fetch(game.team_ids[1].clone(), &mut db).await?,
+    ];
+
+    let players = [
+        Player::try_fetch(teams[0].captain_id.clone(), &mut db).await?,
+        Player::try_fetch(teams[0].partner_id.clone(), &mut db).await?,
+        Player::try_fetch(teams[1].captain_id.clone(), &mut db).await?,
+        Player::try_fetch(teams[1].partner_id.clone(), &mut db).await?
+    ];
+
+    Ok(Template::render("game", context! { game, teams, players }))
 }
 
 #[post("/login", data = "<form>")]

@@ -12,5 +12,22 @@
 	</head>
 	<body>
 		<h1>{{ game.team_names.0 }} vs {{ game.team_names.1 }}</h1>
+
+        <p>Partida jugada dia {{ game.date | date(format="%d/%m/%Y", timezone="Europe/Madrid") }} a les {{ game.date | date(format="%H:%M", timezone="Europe/Madrid") }}</p>
+        <p>{{ game.team_names.0 }} (<strong>{{ players.0.name }}</strong>, {{ players.1.name }}) vs {{ game.team_names.1 }} (<strong>{{ players.2.name }}</strong>, {{ players.3.name }})</p>
+
+        <h2>Resultats</h2>
+        <table class="scores">
+            <thead><tr>
+                <td>{{ game.team_names.0 }}</td>
+                <td>{{ game.team_names.1 }}</td>
+            </tr></thead>
+
+            <tbody>
+                <tr><td>{{ game.scores.0.0 }}</td> <td>{{ game.scores.1.0 }}</td></tr>
+                <tr><td>{{ game.scores.0.1 }}</td> <td>{{ game.scores.1.1 }}</td></tr>
+                <tr><td>{{ game.scores.0.2 }}</td> <td>{{ game.scores.1.2 }}</td></tr>
+            </tbody>
+        </table>
     </body>
 </html>
