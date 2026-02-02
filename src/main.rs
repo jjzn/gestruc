@@ -20,6 +20,7 @@ mod team;
 mod player;
 mod error;
 
+use crate::error::AppError;
 use crate::game::{Game, GameData};
 use crate::team::{Team};
 use crate::player::Player;
@@ -140,6 +141,7 @@ async fn view_team(id: &str, mut db: Connection<AppData>, is_team_member: bool, 
 }
 
 #[get("/teams/<id>")]
+// TODO: change all Option<T> to Result<T, AppError>
 async fn view_team_auth(id: &str, mut db: Connection<AppData>, player: Player) -> Option<Template> {
     let team = Team::try_fetch(id.to_string(), &mut db).await?;
     view_team(id, db, team.has_member(&player), player.id == team.captain_id).await
@@ -148,6 +150,12 @@ async fn view_team_auth(id: &str, mut db: Connection<AppData>, player: Player) -
 #[get("/teams/<id>", rank = 2)]
 async fn view_team_unauth(id: &str, db: Connection<AppData>) -> Option<Template> {
     view_team(id, db, false, false).await
+}
+
+#[get("/games/<id>")]
+async fn view_game(id: &str, mut db: Connection<AppData>) -> Result<Template, AppError> {
+    let game = Game::try_fetch(id.to_string(), &mut db).await?;
+    Ok(Template::render("game", context! { game }))
 }
 
 #[post("/login", data = "<form>")]
@@ -196,6 +204,6 @@ fn rocket() -> _ {
         .attach(AppData::init())
         .attach(Template::fairing())
         .attach(AdHoc::config::<AppConfig>())
-        .mount("/", routes![index, index_auth, view_team_unauth, view_team_auth, add_game_form, add_game, login, logout])
+        .mount("/", routes![index, index_auth, view_team_unauth, view_team_auth, add_game_form, add_game, view_game, login, logout])
         .mount("/", FileServer::from(relative!("public/static")))
 }

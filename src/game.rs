@@ -1,9 +1,9 @@
 use chrono::{DateTime, NaiveDateTime, Utc};
 use chrono_tz::Europe;
 use rocket::{form::Form, serde::Serialize};
-use rocket_db_pools::sqlx::{self, Row};
+use rocket_db_pools::{Connection, sqlx::{self, Row}};
 
-use crate::error::AppError;
+use crate::{AppData, error::AppError};
 
 #[derive(FromForm)]
 #[allow(non_snake_case)]
@@ -43,6 +43,16 @@ pub struct Game {
     pub accepted: [Option<DateTime<Utc>>; 2],
     pub team_names: [String; 2],
     pub team_ids: [String; 2]
+}
+
+impl Game {
+    pub async fn try_fetch(id: String, db: &mut Connection<AppData>) -> Result<Self, AppError> {
+        let row = sqlx::query("SELECT games.id, date, scoresA, scoresB, acceptedByA, acceptedByB, a.name AS teamNameA, b.name AS teamNameB, a.id AS teamIdA, b.id AS teamIdB FROM games JOIN teams AS a ON a.id = teamA JOIN teams AS b ON b.id = teamB WHERE games.id = $1")
+            .bind(id)
+            .fetch_one(&mut ***db).await?;
+
+        Game::try_from(&row)
+    }
 }
 
 struct Timestamp(i64); // Silly little wrapper so that I impl From<i64>

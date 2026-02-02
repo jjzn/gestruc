@@ -1,4 +1,4 @@
-use rocket::http::Status;
+use rocket::{http::Status, response::Responder};
 use rocket_db_pools::sqlx;
 use thiserror::Error;
 
@@ -34,5 +34,12 @@ impl From<AppError> for Status {
             AppError::InvalidTimestamp(_) => Self::BadRequest,
             AppError::InvalidDateTime(_, _) => Self::BadRequest
         }
+    }
+}
+
+// Allows us to return Result<T, AppError> from route handlers
+impl<'r> Responder<'r, 'static> for AppError {
+    fn respond_to(self, _: &'r rocket::Request<'_>) -> rocket::response::Result<'static> {
+        Err(self.into())
     }
 }
