@@ -152,7 +152,7 @@ async fn view_team_unauth(id: &str, db: Connection<AppData>) -> Result<Template,
 }
 
 #[get("/games/<id>")]
-async fn view_game(id: &str, mut db: Connection<AppData>) -> Result<Template, AppError> {
+async fn view_game(id: &str, mut db: Connection<AppData>, player: Option<Player>) -> Result<Template, AppError> {
     let game = Game::try_fetch(id.to_string(), &mut db).await?;
     let teams = [
         Team::try_fetch(game.team_ids[0].clone(), &mut db).await?,
@@ -166,7 +166,13 @@ async fn view_game(id: &str, mut db: Connection<AppData>) -> Result<Template, Ap
         Player::try_fetch(teams[1].partner_id.clone(), &mut db).await?
     ];
 
-    Ok(Template::render("game", context! { game, teams, players }))
+    // If player is None, both values are false, else they depend on matching IDs
+    let is_captain = [
+        player.as_ref().map_or(false, |p| p.id == teams[0].captain_id),
+        player.as_ref().map_or(false, |p| p.id == teams[1].captain_id)
+    ];
+
+    Ok(Template::render("game", context! { game, teams, players, is_captain }))
 }
 
 #[post("/login", data = "<form>")]

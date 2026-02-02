@@ -26,8 +26,22 @@
             <tbody>
                 <tr><td>{{ game.scores.0.0 }}</td> <td>{{ game.scores.1.0 }}</td></tr>
                 <tr><td>{{ game.scores.0.1 }}</td> <td>{{ game.scores.1.1 }}</td></tr>
-                <tr><td>{{ game.scores.0.2 }}</td> <td>{{ game.scores.1.2 }}</td></tr>
+                {% if game.scores.0.2 != 0 and game.scores.1.2 != 0 %}<tr><td>{{ game.scores.0.2 }}</td> <td>{{ game.scores.1.2 }}</td></tr>{% endif %}
             </tbody>
         </table>
+
+        <div class="accepted-dates">
+            <div class="card">
+                <p>{{ game.team_names.0 }}</p>
+                <p>{% if game.accepted.0 %}Acceptat dia {{ game.accepted.0 | date(format="%d/%m/%Y", timezone="Europe/Madrid") }} a les {{ game.accepted.0 | date(format="%H:%M", timezone="Europe/Madrid") }}{% else %}No acceptat{% endif %}</p>
+                {%- if not game.accepted.0 and is_captain.0 %}<a href="/games/{{ game.id }}/accept" class="btn">Acceptar resultat</a>{% endif %}
+            </div>
+
+            <div class="card">
+                <p>{{ game.team_names.1 }}</p>
+                <p>{% if game.accepted.1 %}Acceptat dia {{ game.accepted.1 | date(format="%d/%m/%Y", timezone="Europe/Madrid") }} a les {{ game.accepted.1 | date(format="%H:%M", timezone="Europe/Madrid") }}{% else %}No acceptat{% endif %}</p>
+                {%- if not game.accepted.1 and is_captain.1 %}<a href="/games/{{ game.id }}/accept" class="btn">Acceptar resultat</a>{% endif %}
+            </div>
+        </div>
     </body>
 </html>
