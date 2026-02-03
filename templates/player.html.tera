@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="ca">
+    <head>
+        <meta charset="utf-8"/>
+        <meta name="viewport" content="width=device-width,initial-scale=1"/>
+        <meta name="color-scheme" content="light dark"/>
+        <title>{{ player.name }} | Gestruc</title>
+
+        <link rel="stylesheet" href="/main.css"/>
+        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"/>
+        <link rel="favicon" type="image/png" sizes="32x32" href="/favicon.png"/>
+	</head>
+	<body>
+        <h1>{{ player.name }}</h1>
+
+        {%- if teams %}
+            {%- for team in teams %}
+        <a href="/teams/{{ team.id }}"><div class="card team-card" data-is-captain="{{ team.captain_id == player.id }}">
+            <h2>{{ team.name }}</h2>
+            <p>{{ team.tournament_name }} ({{ team.tournament_edition }})</p>
+        </div></a>
+            {%- endfor %}
+        {%- else %}
+        <p>El jugador no té cap equip</p>
+        {%- endif %}
+    </body>
+</html>

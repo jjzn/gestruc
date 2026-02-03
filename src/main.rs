@@ -201,7 +201,7 @@ async fn accept_game_results(id: &str, mut db: Connection<AppData>, player: Play
 }
 
 #[get("/games/<id>/decline")]
-async fn decline_game_results(id: &str,mut db: Connection<AppData>, player: Player) -> Result<Redirect, Status> {
+async fn decline_game_results(id: &str, mut db: Connection<AppData>, player: Player) -> Result<Redirect, Status> {
     let game = Game::try_fetch(id.to_string(), &mut db).await?;
     let teams = game.get_teams(&mut db).await?;
 
@@ -210,6 +210,14 @@ async fn decline_game_results(id: &str,mut db: Connection<AppData>, player: Play
     }
 
     todo!()
+}
+
+#[get("/players/<id>")]
+async fn view_player(id: &str, mut db: Connection<AppData>) -> Result<Template, AppError> {
+    let player = Player::try_fetch(id.to_string(), &mut db).await?;
+    let teams = player.get_teams(&mut db).await?;
+
+    Ok(Template::render("player", context! { player, teams }))
 }
 
 #[post("/login", data = "<form>")]
@@ -258,6 +266,6 @@ fn rocket() -> _ {
         .attach(AppData::init())
         .attach(Template::fairing())
         .attach(AdHoc::config::<AppConfig>())
-        .mount("/", routes![index, index_auth, view_team_unauth, view_team_auth, add_game_form, add_game, view_game, accept_game_results, decline_game_results, login, logout])
+        .mount("/", routes![index, index_auth, view_team_unauth, view_team_auth, add_game_form, add_game, view_game, accept_game_results, decline_game_results, view_player, login, logout])
         .mount("/", FileServer::from(relative!("public/static")))
 }
