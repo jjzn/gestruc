@@ -154,10 +154,7 @@ async fn view_team_unauth(id: &str, db: Connection<AppData>) -> Result<Template,
 #[get("/games/<id>")]
 async fn view_game(id: &str, mut db: Connection<AppData>, player: Option<Player>) -> Result<Template, AppError> {
     let game = Game::try_fetch(id.to_string(), &mut db).await?;
-    let teams = [
-        Team::try_fetch(game.team_ids[0].clone(), &mut db).await?,
-        Team::try_fetch(game.team_ids[1].clone(), &mut db).await?,
-    ];
+    let teams = game.get_teams(&mut db).await?;
 
     let players = [
         Player::try_fetch(teams[0].captain_id.clone(), &mut db).await?,
@@ -175,11 +172,51 @@ async fn view_game(id: &str, mut db: Connection<AppData>, player: Option<Player>
     Ok(Template::render("game", context! { game, teams, players, is_captain }))
 }
 
+#[get("/games/<id>/accept")]
+async fn accept_game_results(id: &str, mut db: Connection<AppData>, player: Player) -> Result<Redirect, Status> {
+    let game = Game::try_fetch(id.to_string(), &mut db).await?;
+    let teams = game.get_teams(&mut db).await?;
+
+    let player_team = teams
+        .iter().position(|team| team.captain_id == player.id)
+        .ok_or(Status::Unauthorized)?;
+
+    // Prevent accepting the same results again
+    if game.accepted[player_team].is_some() {
+        return Err(Status::Conflict);
+    }
+
+    let statement = if player_team == 0 {
+        "UPDATE games SET acceptedByA = $1 WHERE id = $2"
+    } else {
+        "UPDATE games SET acceptedByB = $1 WHERE id = $2"
+    };
+
+    sqlx::query(statement)
+        .bind(Utc::now().timestamp()).bind(&game.id)
+        .execute(&mut **db).await
+        .map_err(AppError::from)?;
+
+    Ok(Redirect::to(format!("/games/{}", game.id)))
+}
+
+#[get("/games/<id>/decline")]
+async fn decline_game_results(id: &str,mut db: Connection<AppData>, player: Player) -> Result<Redirect, Status> {
+    let game = Game::try_fetch(id.to_string(), &mut db).await?;
+    let teams = game.get_teams(&mut db).await?;
+
+    if player.id != teams[0].captain_id && player.id != teams[1].captain_id {
+        return Err(Status::Unauthorized);
+    }
+
+    todo!()
+}
+
 #[post("/login", data = "<form>")]
 async fn login(form: Form<LoginData>, cookies: &CookieJar<'_>, config: &State<AppConfig>, mut db: Connection<AppData>) -> Result<Redirect, Status> {
     let row = sqlx::query("SELECT password, id FROM players WHERE email = $1").bind(&form.email)
         .fetch_one(&mut **db).await
-        .or(Err(Status::Unauthorized))?;
+        .map_err(AppError::from)?;
 
     if row.get::<&str, usize>(0) != form.password {
         return Err(Status::Unauthorized);
@@ -192,7 +229,7 @@ async fn login(form: Form<LoginData>, cookies: &CookieJar<'_>, config: &State<Ap
     sqlx::query("INSERT INTO sessions (id, playerId, expires) VALUES ($1, $2, $3)")
         .bind(&session).bind(player_id).bind(expiration.timestamp())
         .execute(&mut **db).await
-        .or(Err(Status::InternalServerError))?;
+        .map_err(AppError::from)?;
 
     let cookie = Cookie::build(("sessionId", session))
         .secure(true)
@@ -221,6 +258,6 @@ fn rocket() -> _ {
         .attach(AppData::init())
         .attach(Template::fairing())
         .attach(AdHoc::config::<AppConfig>())
-        .mount("/", routes![index, index_auth, view_team_unauth, view_team_auth, add_game_form, add_game, view_game, login, logout])
+        .mount("/", routes![index, index_auth, view_team_unauth, view_team_auth, add_game_form, add_game, view_game, accept_game_results, decline_game_results, login, logout])
         .mount("/", FileServer::from(relative!("public/static")))
 }

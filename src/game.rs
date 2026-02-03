@@ -3,7 +3,7 @@ use chrono_tz::Europe;
 use rocket::{form::Form, serde::Serialize};
 use rocket_db_pools::{Connection, sqlx::{self, Row}};
 
-use crate::{AppData, error::AppError};
+use crate::{AppData, error::AppError, team::Team};
 
 #[derive(FromForm)]
 #[allow(non_snake_case)]
@@ -46,6 +46,13 @@ pub struct Game {
 }
 
 impl Game {
+    pub async fn get_teams(&self, db: &mut Connection<AppData>) -> Result<[Team; 2], AppError> {
+        Ok([
+            Team::try_fetch(self.team_ids[0].clone(), db).await?,
+            Team::try_fetch(self.team_ids[1].clone(), db).await?
+        ])
+    }
+
     pub async fn try_fetch(id: String, db: &mut Connection<AppData>) -> Result<Self, AppError> {
         let row = sqlx::query("SELECT games.id, date, scoresA, scoresB, acceptedByA, acceptedByB, a.name AS teamNameA, b.name AS teamNameB, a.id AS teamIdA, b.id AS teamIdB FROM games JOIN teams AS a ON a.id = teamA JOIN teams AS b ON b.id = teamB WHERE games.id = $1")
             .bind(id)
