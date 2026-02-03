@@ -19,16 +19,18 @@
         </div>
 
         {%- if games %}
+        <div class="card-stack">
             {%- for game in games %}
-        <div class="card game-card">
-            <a href="/games/{{ game.id }}">Veure detalls</a>
-            <h2><a href="/teams/{{ game.team_ids.0 }}">{{ game.team_names.0 }}</a> vs <a href="/teams/{{ game.team_ids.1 }}">{{ game.team_names.1 }}</a></h2>
-            <div class="stack-horiz">
-                <p class="date">{{ game.date | date(format="%Y-%m-%d %H:%M", timezone="Europe/Madrid")}}</p>
-                <p class="scores">{{ game.scores.0.0 }}-{{ game.scores.1.0 }}, {{ game.scores.0.1 }}-{{ game.scores.1.1 }} {%- if game.scores.0.2 != 0 and game.scores.1.2 != 0 %}, {{ game.scores.0.2 }}-{{ game.scores.1.2 }}{% endif %}</p>
+            <div class="card game-card">
+                <a href="/games/{{ game.id }}">Veure detalls</a>
+                <h2><a href="/teams/{{ game.team_ids.0 }}">{{ game.team_names.0 }}</a> vs <a href="/teams/{{ game.team_ids.1 }}">{{ game.team_names.1 }}</a></h2>
+                <div class="stack-horiz">
+                    <p class="date">{{ game.date | date(format="%Y-%m-%d %H:%M", timezone="Europe/Madrid")}}</p>
+                    <p class="scores">{{ game.scores.0.0 }}-{{ game.scores.1.0 }}, {{ game.scores.0.1 }}-{{ game.scores.1.1 }} {%- if game.scores.0.2 != 0 and game.scores.1.2 != 0 %}, {{ game.scores.0.2 }}-{{ game.scores.1.2 }}{% endif %}</p>
+                </div>
             </div>
-        </div>
             {%- endfor %}
+        </div>
         {%- else %}
         <p>No tens partides jugades</p>
         {%- endif %}

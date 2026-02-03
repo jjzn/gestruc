@@ -77,11 +77,17 @@ a:hover:has(.team-card) {
 a:hover .team-card h2 { color: var(--accent); }
 
 .card {
-    margin-top: 1.5rem;
     padding: 1.25rem;
     background: var(--card-bg);
     border: 1px solid var(--border);
     border-radius: 0.75rem;
+}
+
+.card-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-top: 1rem;
 }
 
 .team-card h2 {
@@ -90,10 +96,7 @@ a:hover .team-card h2 { color: var(--accent); }
 	transition: color .2s;
 }
 
-.team-card p {
-    margin-top: 0.25rem;
-    color: var(--muted);
-}
+.team-card p { color: var(--muted); }
 
 .team-card[data-is-captain="true"] { position: relative; }
 
@@ -112,16 +115,6 @@ a:hover .team-card h2 { color: var(--accent); }
 .game-card p { color: var(--fg); }
 
 .game-card .scores { font-weight: bold; }
-
-.game-card ul {
-    margin: 0.5rem 0 0;
-    padding-left: 1.25rem;
-}
-
-.game-card li {
-    margin: 0.25rem 0;
-    color: var(--muted);
-}
 
 .stack-horiz {
 	display: flex;
@@ -265,11 +258,14 @@ table.scores td {
 .accepted-dates {
     display: flex;
     flex-direction: row;
+    flex-wrap: wrap;
     gap: 1rem;
+    margin-top: 1rem;
 }
 
 .accepted-dates > * { flex: 1; }
 
 .accepted-dates p:first-child {
     color: var(--fg);
+    width: max-content; /* Team names should be max-content */
 }

@@ -14,12 +14,14 @@
         <h1>{{ player.name }}</h1>
 
         {%- if teams %}
+        <div class="card-stack">
             {%- for team in teams %}
-        <a href="/teams/{{ team.id }}"><div class="card team-card" data-is-captain="{{ team.captain_id == player.id }}">
-            <h2>{{ team.name }}</h2>
-            <p>{{ team.tournament_name }} ({{ team.tournament_edition }})</p>
-        </div></a>
+            <a href="/teams/{{ team.id }}"><div class="card team-card" data-is-captain="{{ team.captain_id == player.id }}">
+                <h2>{{ team.name }}</h2>
+                <p>{{ team.tournament_name }} ({{ team.tournament_edition }})</p>
+            </div></a>
             {%- endfor %}
+        </div>
         {%- else %}
         <p>El jugador no té cap equip</p>
         {%- endif %}
