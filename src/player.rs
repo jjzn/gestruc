@@ -35,7 +35,7 @@ impl Player {
     }
 }
 
-#[async_trait]
+#[rocket::async_trait]
 impl<'r> FromRequest<'r> for Player {
     // We do not need to display detailed app errors, we only care about the HTTP status
     type Error = ();

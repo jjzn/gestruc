@@ -1,11 +1,11 @@
 use chrono::{DateTime, NaiveDateTime, Utc};
 use chrono_tz::Europe;
 use rocket::{form::Form, serde::Serialize};
-use rocket_db_pools::{Connection, sqlx::{self, Row}};
+use rocket_db_pools::{Connection, sqlx::{self, Execute, Row}};
 
 use crate::{AppData, error::AppError, team::Team};
 
-#[derive(FromForm)]
+#[derive(rocket::FromForm)]
 #[allow(non_snake_case)]
 pub struct GameData {
     pub opponentName: String,
@@ -28,9 +28,15 @@ impl From<u32> for GameScore {
     }
 }
 
+impl From<&GameScore> for u32 {
+    fn from(score: &GameScore) -> Self {
+        (score.0 as u32) | ((score.1 as u32) << 8) | ((score.2 as u32) << 16)
+    }
+}
+
 impl From<GameScore> for u32 {
     fn from(score: GameScore) -> Self {
-        (score.0 as u32) | ((score.1 as u32) << 8) | ((score.2 as u32) << 16)
+        score.into()
     }
 }
 

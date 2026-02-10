@@ -15,19 +15,11 @@ use rocket_db_pools::{Connection, Database, sqlx};
 use rocket_db_pools::sqlx::Row;
 use rocket_dyn_templates::{Template, context};
 
-mod game;
-mod team;
-mod player;
-mod error;
-
-use crate::error::AppError;
-use crate::game::{Game, GameData};
-use crate::team::{Team};
-use crate::player::Player;
-
-#[derive(Database)]
-#[database("appdata")]
-struct AppData(sqlx::SqlitePool);
+use gestruc::error::AppError;
+use gestruc::game::{Game, GameData};
+use gestruc::team::{Team};
+use gestruc::player::Player;
+use gestruc::AppData;
 
 #[derive(Deserialize)]
 #[serde(crate = "rocket::serde")]
