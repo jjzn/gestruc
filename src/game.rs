@@ -36,7 +36,7 @@ impl From<&GameScore> for u32 {
 
 impl From<GameScore> for u32 {
     fn from(score: GameScore) -> Self {
-        score.into()
+        (&score).into() // Use the other From<> impl (From<&GameScore>)
     }
 }
 
