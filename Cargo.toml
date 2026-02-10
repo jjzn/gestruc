@@ -2,10 +2,12 @@
 name = "gestruc"
 version = "0.1.0"
 edition = "2024"
+default-run = "gestruc"
 
 [dependencies]
 chrono = { version = "0.4.42", features = ["serde"] }
 chrono-tz = "0.10.4"
+csv = "1.4.0"
 regex = "1.12.2"
 rocket = { version = "0.5.1", features = ["json"] }
 rocket_db_pools = { version = "0.2.0", features = ["sqlx_sqlite"] }

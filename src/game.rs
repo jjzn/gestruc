@@ -1,7 +1,7 @@
 use chrono::{DateTime, NaiveDateTime, Utc};
 use chrono_tz::Europe;
 use rocket::{form::Form, serde::Serialize};
-use rocket_db_pools::{Connection, sqlx::{self, Execute, Row}};
+use rocket_db_pools::{Connection, sqlx::{self, Row}};
 
 use crate::{AppData, error::AppError, team::Team};
 
@@ -20,7 +20,7 @@ pub struct GameData {
 
 #[derive(Serialize)]
 #[serde(crate = "rocket::serde")]
-pub struct GameScore(u8, u8, u8);
+pub struct GameScore(pub u8, pub u8, pub u8);
 
 impl From<u32> for GameScore {
     fn from(score: u32) -> Self {
@@ -67,20 +67,19 @@ impl Game {
         Game::try_from(&row)
     }
 
-    pub fn to_sql_insert(&self) -> &str {
+    pub fn to_sql_insert(&self) -> String {
         let scores_a = &self.scores[0];
         let scores_b = &self.scores[1];
 
-        sqlx::query("INSERT INTO games (id, date, scoresA, scoresB, acceptedByA, acceptedByB, teamA, teamB) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)")
-            .bind(&self.id)
-            .bind(self.date.timestamp())
-            .bind::<u32>(scores_a.into())
-            .bind::<u32>(scores_b.into())
-            .bind(self.accepted[0].map(|dt| dt.timestamp()))
-            .bind(self.accepted[1].map(|dt| dt.timestamp()))
-            .bind(&self.team_ids[0])
-            .bind(&self.team_ids[1])
-            .sql()
+        format!("INSERT INTO games (id, date, scoresA, scoresB, acceptedByA, acceptedByB, teamA, teamB) VALUES ('{}', {}, {}, {}, {}, {}, '{}', '{}')",
+            self.id,
+            self.date.timestamp(),
+            u32::from(scores_a),
+            u32::from(scores_b),
+            self.accepted[0].map_or("NULL".into(), |dt| dt.timestamp().to_string()),
+            self.accepted[1].map_or("NULL".into(), |dt| dt.timestamp().to_string()),
+            self.team_ids[0],
+            self.team_ids[1])
     }
 }
 
