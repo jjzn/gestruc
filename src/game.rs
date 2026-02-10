@@ -66,6 +66,22 @@ impl Game {
 
         Game::try_from(&row)
     }
+
+    pub fn to_sql_insert(&self) -> &str {
+        let scores_a = &self.scores[0];
+        let scores_b = &self.scores[1];
+
+        sqlx::query("INSERT INTO games (id, date, scoresA, scoresB, acceptedByA, acceptedByB, teamA, teamB) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)")
+            .bind(&self.id)
+            .bind(self.date.timestamp())
+            .bind::<u32>(scores_a.into())
+            .bind::<u32>(scores_b.into())
+            .bind(self.accepted[0].map(|dt| dt.timestamp()))
+            .bind(self.accepted[1].map(|dt| dt.timestamp()))
+            .bind(&self.team_ids[0])
+            .bind(&self.team_ids[1])
+            .sql()
+    }
 }
 
 struct Timestamp(i64); // Silly little wrapper so that I impl From<i64>
