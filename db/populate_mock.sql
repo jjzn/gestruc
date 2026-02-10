@@ -17,6 +17,9 @@ INSERT INTO teams VALUES('team02','Retrucs','user03','user04','Lliga UIB','2024-
 INSERT INTO teams VALUES('team03','AmoMadona','user05','user06','Lliga UIB','2024-2025');
 INSERT INTO teams VALUES('team04','Super Manilles 2000','user07','user08','Lliga UIB','2024-2025');
 
+INSERT INTO teams VALUES('team11','Envit de Fenwick','user02','user01','Lliga UIB','2025-2026');
+
 INSERT INTO games VALUES('game01',1767294000,1445400,1579027,NULL,1767300300,'team01','team02');
 INSERT INTO games VALUES('game02',1767294000,1445400,1579027,NULL,1767300300,'team01','team03');
 INSERT INTO games VALUES('game03',1767294000,1445400,1579027,NULL,1767300300,'team03','team02');
+INSERT INTO games VALUES('game04',1767296450,6168,5394,NULL,NULL,'team02','team01');
