@@ -28,18 +28,11 @@ impl Team {
     }
 
     pub async fn try_fetch(id: String, db: &mut Connection<AppData>) -> Result<Self, AppError> {
-        let row = sqlx::query("SELECT name, captainId, partnerId, tournamentName, tournamentEdition FROM teams WHERE id = $1")
+        let row = sqlx::query("SELECT id, name, captainId, partnerId, tournamentName, tournamentEdition FROM teams WHERE id = $1")
             .bind(&id)
             .fetch_one(&mut ***db).await?;
 
-        Ok(Self {
-            id,
-            name: row.try_get("name")?,
-            captain_id: row.try_get("captainId")?,
-            partner_id: row.try_get("partnerId")?,
-            tournament_name: row.try_get("tournamentName")?,
-            tournament_edition: row.try_get("tournamentEdition")?
-        })
+        (&row).try_into()
     }
 
     pub fn has_member(&self, player: &Player) -> bool {
