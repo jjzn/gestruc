@@ -4,6 +4,8 @@ pub mod player;
 pub mod team;
 pub mod tournament;
 
+pub mod routes;
+
 use rocket_db_pools::{Database, sqlx};
 
 #[derive(Database)]

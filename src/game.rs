@@ -136,7 +136,7 @@ impl TryFrom<Form<GameData>> for Game {
     fn try_from(form: Form<GameData>) -> Result<Self, Self::Error> {
         let fmt = "%Y-%m-%dT%H:%M";
 
-        let date = NaiveDateTime::parse_from_str(&form.date, "%Y-%m-%dT%H:%M")
+        let date = NaiveDateTime::parse_from_str(&form.date, fmt)
             .map_err(|_| AppError::InvalidDateTime(form.date.clone(), fmt.to_string()))?
             .and_local_timezone(Europe::Madrid)
             .unwrap().to_utc();
