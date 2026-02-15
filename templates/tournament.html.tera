@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="ca">
+    <head>
+        <meta charset="utf-8"/>
+        <meta name="viewport" content="width=device-width,initial-scale=1"/>
+        <meta name="color-scheme" content="light dark"/>
+        <title>{{ tournament.name }} | Gestruc</title>
+
+        <link rel="stylesheet" href="/main.css"/>
+        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"/>
+        <link rel="favicon" type="image/png" sizes="32x32" href="/favicon.png"/>
+	</head>
+	<body>
+		<h1>{{ tournament.name }}</h1>
+        <p>{{ tournament.edition }}</p>
+
+        <h2>Equips</h2>
+
+        {%- if teams %}
+        <div class="card-stack">
+            {%- for team in teams %}
+            <div class="card game-card">
+                <h2><a href="/teams/{{ team.id }}">{{ team.name }}</a></h2>
+            </div>
+            {%- endfor %}
+        </div>
+        {%- else %}
+        <p>No hi ha cap equip registrat</p>
+        {%- endif %}
+    </body>
+</html>

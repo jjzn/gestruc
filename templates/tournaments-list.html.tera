@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="ca">
+    <head>
+        <meta charset="utf-8"/>
+        <meta name="viewport" content="width=device-width,initial-scale=1"/>
+        <meta name="color-scheme" content="light dark"/>
+        <title>Llista de tornejos | Gestruc</title>
+
+        <link rel="stylesheet" href="/main.css"/>
+        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"/>
+        <link rel="favicon" type="image/png" sizes="32x32" href="/favicon.png"/>
+	</head>
+	<body>
+		<h1>Llista de tornejos</h1>
+
+        {%- if tournaments %}
+        <div class="card-stack">
+            {%- for tournament in tournaments %}
+            <a href="/tournament/{{ tournament.name }}/{{ tournament.edition }}"><div class="card team-card">
+                <h2>{{ tournament.name }}</h2>
+                <p>{{ tournament.edition }}</p>
+            </div></a>
+            {%- endfor %}
+        </div>
+        {%- else %}
+        <p>No hi ha cap torneig</p>
+        {%- endif %}
+    </body>
+</html>

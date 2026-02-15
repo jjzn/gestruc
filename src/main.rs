@@ -17,8 +17,9 @@ use rocket_dyn_templates::{Template, context};
 
 use gestruc::error::AppError;
 use gestruc::game::{Game, GameData};
-use gestruc::team::{Team};
 use gestruc::player::Player;
+use gestruc::team::{Team};
+use gestruc::tournament::Tournament;
 use gestruc::AppData;
 
 #[derive(Deserialize)]
@@ -121,6 +122,25 @@ async fn index_auth(player: Player, mut db: Connection<AppData>) -> Template {
 #[get("/", rank = 2)]
 async fn index() -> Option<NamedFile> {
     NamedFile::open("public/index.html").await.ok()
+}
+
+#[get("/tournament/<name>/<edition>")]
+async fn view_tournament(name: &str, edition: &str, mut db: Connection<AppData>) -> Result<Template, AppError> {
+    let tournament = Tournament::try_fetch(name.to_string(), edition.to_string(), &mut db).await?;
+    let teams = tournament.get_teams(&mut db).await?;
+
+    // TODO: add players and games
+    Ok(Template::render("tournament", context! { tournament, teams }))
+}
+
+#[get("/tournaments")]
+async fn view_tournaments_all(mut db: Connection<AppData>) -> Result<Template, AppError> {
+    let tournaments: Vec<Tournament> = sqlx::query("SELECT * FROM tournaments")
+        .fetch_all(&mut **db).await?
+        .iter().map(Tournament::try_from)
+        .collect::<Result<_, _>>()?;
+
+    Ok(Template::render("tournaments-list", context ! { tournaments }))
 }
 
 async fn view_team(id: &str, mut db: Connection<AppData>, is_team_member: bool, is_captain: bool) -> Result<Template, AppError> {
@@ -258,6 +278,6 @@ fn rocket() -> _ {
         .attach(AppData::init())
         .attach(Template::fairing())
         .attach(AdHoc::config::<AppConfig>())
-        .mount("/", routes![index, index_auth, view_team_unauth, view_team_auth, add_game_form, add_game, view_game, accept_game_results, decline_game_results, view_player, login, logout])
+        .mount("/", routes![index, index_auth, view_tournament, view_tournaments_all, view_team_unauth, view_team_auth, add_game_form, add_game, view_game, accept_game_results, decline_game_results, view_player, login, logout])
         .mount("/", FileServer::from(relative!("public/static")))
 }
