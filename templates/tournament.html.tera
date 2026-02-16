@@ -1,3 +1,4 @@
+{% import "partials" as partials %}
 <!doctype html>
 <html lang="ca">
     <head>
@@ -16,9 +17,9 @@
 
         <h2>Equips</h2>
 
-        {%- if teams %}
+        {%- if team_infos %}
         <div class="card-stack">
-            {%- for team in teams %}
+            {%- for team in team_infos %}
             <a href="/teams/{{ team.team.id }}"><div class="card team-card">
                 <h2>{{ team.team.name }}</h2>
                 <p><strong>{{ team.captain.name }}</strong>, {{ team.partner.name }}</p>
@@ -27,6 +28,17 @@
         </div>
         {%- else %}
         <p>No hi ha cap equip registrat</p>
+        {%- endif %}
+
+        <h2>Partides</h2>
+        {%- if games %}
+        <div class="card-stack">
+            {%- for game in games %}
+                {{ partials::game_card(game=game) }}
+            {%- endfor %}
+        </div>
+        {%- else %}
+        <p>No hi ha cap partida enregistrada</p>
         {%- endif %}
     </body>
 </html>

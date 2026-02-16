@@ -67,16 +67,31 @@ async fn index() -> Option<NamedFile> {
 #[get("/tournament/<name>/<edition>")]
 async fn view_tournament(name: &str, edition: &str, mut db: Connection<AppData>) -> Result<Template, AppError> {
     let tournament = Tournament::try_fetch(name.to_string(), edition.to_string(), &mut db).await?;
+    let teams = tournament.get_teams(&mut db).await?;
 
-    let mut teams = Vec::new();
+    let games = {
+        let mut vec = Vec::new(); // We do not know size beforehand
 
-    // TODO: not concurrent
-    for team in tournament.get_teams(&mut db).await? {
-        teams.push(team.get_team_info(&mut db).await?);
-    }
+        // TODO: not concurrent
+        for team in &teams {
+            vec.extend(team.get_games(&mut db).await?);
+        }
 
-    // TODO: add players and games
-    Ok(Template::render("tournament", context! { tournament, teams }))
+        vec
+    };
+
+    let team_infos = {
+        let mut vec = Vec::with_capacity(teams.len());
+
+        // TODO: not concurrent
+        for team in teams {
+            vec.push(team.get_team_info(&mut db).await?);
+        }
+
+        vec
+    };
+
+    Ok(Template::render("tournament", context! { tournament, games, team_infos }))
 }
 
 #[get("/tournaments")]
