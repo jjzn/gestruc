@@ -19,9 +19,10 @@
         {%- if teams %}
         <div class="card-stack">
             {%- for team in teams %}
-            <div class="card game-card">
-                <h2><a href="/teams/{{ team.id }}">{{ team.name }}</a></h2>
-            </div>
+            <a href="/teams/{{ team.team.id }}"><div class="card team-card">
+                <h2>{{ team.team.name }}</h2>
+                <p><strong>{{ team.captain.name }}</strong>, {{ team.partner.name }}</p>
+            </div></a>
             {%- endfor %}
         </div>
         {%- else %}

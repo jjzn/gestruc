@@ -18,6 +18,15 @@ pub struct Team {
     pub tournament_edition: String
 }
 
+// Only used for serializing to templates, so we have team and player info all in the same place
+#[derive(Serialize)]
+#[serde(crate = "rocket::serde")]
+pub struct TeamInfo {
+    team: Team,
+    captain: Player,
+    partner: Player
+}
+
 impl Team {
     pub async fn get_games(&self, db: &mut Connection<AppData>) -> Result<Vec<Game>, AppError> {
         let rows = sqlx::query("SELECT games.id, date, scoresA, scoresB, acceptedByA, acceptedByB, a.name AS teamNameA, b.name AS teamNameB, a.id AS teamIdA, b.id AS teamIdB FROM games JOIN teams AS a ON a.id = teamA JOIN teams AS b ON b.id = teamB WHERE teamA = $1 OR teamB = $1")
@@ -25,6 +34,19 @@ impl Team {
             .fetch_all(&mut ***db).await?;
 
         rows.iter().map(Game::try_from).collect()
+    }
+
+    pub async fn get_players(&self, db: &mut Connection<AppData>) -> Result<(Player, Player), AppError> {
+        let captain = Player::try_fetch(self.captain_id.clone(), db).await?;
+        let partner = Player::try_fetch(self.partner_id.clone(), db).await?;
+
+        Ok((captain, partner))
+    }
+
+    pub async fn get_team_info(self, db: &mut Connection<AppData>) -> Result<TeamInfo, AppError> {
+        let (captain, partner) = self.get_players(db).await?;
+
+        Ok(TeamInfo { team: self, captain, partner })
     }
 
     pub async fn try_fetch(id: String, db: &mut Connection<AppData>) -> Result<Self, AppError> {
