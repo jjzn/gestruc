@@ -38,6 +38,16 @@ CREATE TABLE games (
 	FOREIGN KEY (teamB) REFERENCES teams(id)
 ) STRICT;
 
+CREATE TABLE complaints (
+    id TEXT PRIMARY KEY,
+    date INTEGER NOT NULL,
+    game TEXT NOT NULL,
+    author TEXT NOT NULL,
+    text TEXT NOT NULL,
+    FOREIGN KEY (game) REFERENCES games(id),
+    FOREIGN KEY (author) REFERENCES players(id)
+) STRICT;
+
 CREATE TABLE sessions (
 	id TEXT PRIMARY KEY,
 	playerId TEXT NOT NULL,

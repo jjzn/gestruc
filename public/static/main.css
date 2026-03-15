@@ -149,7 +149,7 @@ form.scores > label + input {
 	margin-top: -1rem;
 }
 
-form.login, form.scores {
+form {
 	padding: 2rem;
 	background: var(--card-bg);
 	border: 1px solid var(--border);
@@ -180,7 +180,7 @@ label {
 	margin-bottom: 0.25rem;
 }
 
-input {
+input, textarea {
 	width: 100%;
 	padding: 0.5rem 1rem;
 	background: var(--bg);
@@ -189,11 +189,13 @@ input {
 	font: inherit;
 }
 
-input:focus {
+input:focus, textarea:focus {
 	outline: none;
 	border-color: var(--accent);
 	box-shadow: 0 0 3px var(--accent);
 }
+
+textarea { resize: vertical; }
 
 button, .btn {
     display: inline-block;

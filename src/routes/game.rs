@@ -13,8 +13,13 @@ use crate::game::{Game, GameData};
 use crate::player::Player;
 use crate::team::Team;
 
+#[derive(rocket::FromForm)]
+struct ComplaintData {
+    text: String
+}
+
 pub fn routes() -> Vec<rocket::Route> {
-    routes![view_game, accept_game_results, decline_game_results, add_game_form, add_game]
+    routes![view_game, accept_game_results, file_complaint_form, file_complaint, add_game_form, add_game]
 }
 
 #[get("/games/<id>")]
@@ -43,6 +48,7 @@ async fn accept_game_results(id: &str, mut db: Connection<AppData>, player: Play
     let game = Game::try_fetch(id.to_string(), &mut db).await?;
     let teams = game.get_teams(&mut db).await?;
 
+    // The index of the team of which the player is the captain
     let player_team = teams
         .iter().position(|team| team.captain_id == player.id)
         .ok_or(Status::Unauthorized)?;
@@ -66,16 +72,31 @@ async fn accept_game_results(id: &str, mut db: Connection<AppData>, player: Play
     Ok(Redirect::to(format!("/games/{}", game.id)))
 }
 
-#[get("/games/<id>/decline")]
-async fn decline_game_results(id: &str, mut db: Connection<AppData>, player: Player) -> Result<Redirect, Status> {
+#[get("/games/<id>/file-complaint")]
+async fn file_complaint_form(id: &str, mut db: Connection<AppData>, player: Player) -> Result<Template, Status> {
     let game = Game::try_fetch(id.to_string(), &mut db).await?;
-    let teams = game.get_teams(&mut db).await?;
 
-    if player.id != teams[0].captain_id && player.id != teams[1].captain_id {
-        return Err(Status::Unauthorized);
-    }
+    Ok(Template::render("file-complaint", context! { game }))
+}
 
-    todo!()
+#[post("/games/<id>/file-complaint", data = "<form>")]
+async fn file_complaint(id: &str, form: Form<ComplaintData>, mut db: Connection<AppData>, player: Player) -> Result<Redirect, Status> {
+    let game = Game::try_fetch(id.to_string(), &mut db).await?;
+    // TODO: check player is a team captain
+    // TODO: mark game as non-acceptable
+
+    let complaint_id = uuid::Uuid::new_v4().to_string();
+
+    sqlx::query("INSERT INTO complaints (id, date, game, author, text) VALUES ($1, $2, $3, $4, $5)")
+        .bind(complaint_id)
+        .bind(Utc::now().timestamp())
+        .bind(id)
+        .bind(player.id)
+        .bind(&form.text)
+        .execute(&mut **db).await
+        .map_err(AppError::from)?;
+
+    Ok(Redirect::to(format!("/games/{}", game.id)))
 }
 
 #[get("/add-game/<teamid>")]

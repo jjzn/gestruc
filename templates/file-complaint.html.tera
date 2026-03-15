@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="ca">
+    <head>
+        <meta charset="utf-8"/>
+        <meta name="viewport" content="width=device-width,initial-scale=1"/>
+        <meta name="color-scheme" content="light dark"/>
+        <title>Presentar queixa | Gestruc</title>
+
+        <link rel="stylesheet" href="/main.css"/>
+        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"/>
+        <link rel="favicon" type="image/png" sizes="32x32" href="/favicon.png"/>
+	</head>
+	<body>
+		<h1>Presentar queixa</h1>
+        <form action="/games/{{ game.id }}/file-complaint" method="post">
+            <label for="text">Continguts de la queixa</label>
+            <textarea name="text" rows="10"></textarea>
+
+            <button class="primary">Presentar queixa</button>
+        </form>
+    </body>
+</html>

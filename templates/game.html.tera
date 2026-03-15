@@ -37,7 +37,7 @@
                 {%- if not game.accepted.0 and is_captain.0 %}
                 <div class="btn-field">
                     <a href="/games/{{ game.id }}/accept" class="btn narrow">Acceptar resultat</a>
-                    <a href="/games/{{ game.id }}/decline" class="btn narrow danger">Rebutjar resultat</a>
+                    <a href="/games/{{ game.id }}/file-complaint" class="btn narrow danger">Presentar queixa</a>
                 </div>
                 {%- endif %}
             </div>
@@ -48,7 +48,7 @@
                 {%- if not game.accepted.1 and is_captain.1 %}
                 <div class="btn-field">
                     <a href="/games/{{ game.id }}/accept" class="btn narrow">Acceptar resultat</a>
-                    <a href="/games/{{ game.id }}/decline" class="btn narrow danger">Rebutjar resultat</a>
+                    <a href="/games/{{ game.id }}/file-complaint" class="btn narrow danger">Presentar queixa</a>
                 </div>
                 {%- endif %}
             </div>
