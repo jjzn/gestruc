@@ -3,6 +3,8 @@ use std::collections::HashMap;
 use thiserror::Error;
 
 use gestruc::game::{Game, GameScore};
+use gestruc::team::Team;
+use gestruc::player::Player;
 
 #[derive(Error, Debug)]
 enum Error {
@@ -26,7 +28,11 @@ fn main() -> Result<(), Error> {
         .has_headers(false)
         .from_path(path)?;
 
+    let tournament_name = std::env::args().nth(2).ok_or(Error::MissingArgument("tournament_name"))?;
+    let tournament_edition = std::env::args().nth(3).ok_or(Error::MissingArgument("tournament_edition"))?;
+
     let mut teams = HashMap::new();
+    let mut players = HashMap::new();
     let mut statements = Vec::new();
 
     for record in reader.records() {
@@ -63,6 +69,37 @@ fn main() -> Result<(), Error> {
 
         statements.push(game.to_sql_insert().to_string());
     }
+
+    for (name, id) in teams {
+        let captain_id = uuid::Uuid::new_v4().to_string();
+        let partner_id = uuid::Uuid::new_v4().to_string();
+
+        players.insert(captain_id.clone(), format!("\"{}\" capità", name));
+        players.insert(partner_id.clone(), format!("\"{}\" jugador", name));
+
+        let team = Team {
+            id,
+            name,
+            captain_id,
+            partner_id,
+            tournament_name: tournament_name.clone(),
+            tournament_edition: tournament_edition.clone()
+        };
+
+        statements.push(team.to_sql_insert().to_string());
+    }
+
+    for (id, name) in players {
+        let player = Player {
+            id: id.clone(),
+            email: format!("{}@players.gestruc", id),
+            name
+        };
+
+        statements.push(player.to_sql_insert());
+    }
+
+    statements.push(format!("INSERT INTO tournaments (name, edition) VALUES ('{}', '{}');", tournament_name, tournament_edition));
 
     println!("{}", statements.join("\n"));
 

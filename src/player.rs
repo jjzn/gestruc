@@ -33,6 +33,14 @@ impl Player {
 
         Ok(Self { id, email: row.try_get("email")?, name: row.try_get("name")? })
     }
+
+    pub fn to_sql_insert(&self) -> String {
+        format!("INSERT INTO players (id, email, password, name) VALUES ('{}', '{}', '{}', '{}');",
+            self.id,
+            self.email,
+            "1234",
+            self.name)
+    }
 }
 
 #[rocket::async_trait]

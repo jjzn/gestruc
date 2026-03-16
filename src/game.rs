@@ -71,7 +71,7 @@ impl Game {
         let scores_a = &self.scores[0];
         let scores_b = &self.scores[1];
 
-        format!("INSERT INTO games (id, date, scoresA, scoresB, acceptedByA, acceptedByB, teamA, teamB) VALUES ('{}', {}, {}, {}, {}, {}, '{}', '{}')",
+        format!("INSERT INTO games (id, date, scoresA, scoresB, acceptedByA, acceptedByB, teamA, teamB) VALUES ('{}', {}, {}, {}, {}, {}, '{}', '{}');",
             self.id,
             self.date.timestamp(),
             u32::from(scores_a),

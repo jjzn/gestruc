@@ -60,6 +60,16 @@ impl Team {
     pub fn has_member(&self, player: &Player) -> bool {
         player.id == self.captain_id || player.id == self.partner_id
     }
+
+    pub fn to_sql_insert(&self) -> String {
+        format!("INSERT INTO teams (id, name, captainId, partnerId, tournamentName, tournamentEdition) VALUES ('{}', '{}', '{}', '{}', '{}', '{}');",
+            self.id,
+            self.name,
+            self.captain_id,
+            self.partner_id,
+            self.tournament_name,
+            self.tournament_edition)
+    }
 }
 
 impl TryFrom<&sqlx::sqlite::SqliteRow> for Team {
