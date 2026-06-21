@@ -21,7 +21,14 @@ impl Tournament {
             .bind(name).bind(edition)
             .fetch_one(&mut ***db).await?;
 
-        Ok(Self { name: row.try_get("name")?, edition: row.try_get("edition")? })
+        (&row).try_into()
+    }
+
+    pub async fn try_fetch_all(db: &mut Connection<AppData>) -> Result<Vec<Self>, AppError> {
+        let rows = sqlx::query("SELECT name, edition FROM tournaments")
+            .fetch_all(&mut ***db).await?;
+
+        rows.iter().map(TryInto::try_into).collect()
     }
 
     pub async fn get_teams(&self, db: &mut Connection<AppData>) -> Result<Vec<Team>, AppError> {

@@ -10,13 +10,14 @@ use rocket::form::Form;
 use rocket::fs::{FileServer, NamedFile, relative};
 use rocket::http::{Cookie, CookieJar, SameSite, Status};
 use rocket::response::Redirect;
-use rocket::serde::{Deserialize, Deserializer, de::Error};
+use rocket::serde::{Deserialize, Deserializer, de::Error, json::Json};
 use rocket_db_pools::{Connection, Database, sqlx};
 use rocket_db_pools::sqlx::Row;
 use rocket_dyn_templates::{Template, context};
 
 use gestruc::error::AppError;
 use gestruc::player::Player;
+use gestruc::team::Team;
 use gestruc::tournament::Tournament;
 use gestruc::AppData;
 use gestruc::routes;
@@ -64,52 +65,25 @@ async fn index() -> Option<NamedFile> {
     NamedFile::open("public/index.html").await.ok()
 }
 
-#[get("/tournament/<name>/<edition>")]
-async fn view_tournament(name: &str, edition: &str, mut db: Connection<AppData>) -> Result<Template, AppError> {
+#[get("/tournaments/<name>/<edition>")]
+async fn view_tournament(name: &str, edition: &str, mut db: Connection<AppData>) -> Result<Json<(Tournament, Vec<Team>)>, AppError> {
     let tournament = Tournament::try_fetch(name.to_string(), edition.to_string(), &mut db).await?;
     let teams = tournament.get_teams(&mut db).await?;
 
-    let games = {
-        let mut vec = Vec::new(); // We do not know size beforehand
-
-        // TODO: not concurrent
-        for team in &teams {
-            vec.extend(team.get_games(&mut db).await?);
-        }
-
-        vec
-    };
-
-    let team_infos = {
-        let mut vec = Vec::with_capacity(teams.len());
-
-        // TODO: not concurrent
-        for team in teams {
-            vec.push(team.get_team_info(&mut db).await?);
-        }
-
-        vec
-    };
-
-    Ok(Template::render("tournament", context! { tournament, games, team_infos }))
+    Ok(Json((tournament, teams)))
 }
 
 #[get("/tournaments")]
-async fn view_tournaments_all(mut db: Connection<AppData>) -> Result<Template, AppError> {
-    let tournaments: Vec<Tournament> = sqlx::query("SELECT * FROM tournaments")
-        .fetch_all(&mut **db).await?
-        .iter().map(Tournament::try_from)
-        .collect::<Result<_, _>>()?;
-
-    Ok(Template::render("tournaments-list", context ! { tournaments }))
+async fn view_tournaments_all(mut db: Connection<AppData>) -> Result<Json<Vec<Tournament>>, AppError> {
+    Ok(Json(Tournament::try_fetch_all(&mut db).await?))
 }
 
 #[get("/players/<id>")]
-async fn view_player(id: &str, mut db: Connection<AppData>) -> Result<Template, AppError> {
+async fn view_player(id: &str, mut db: Connection<AppData>) -> Result<Json<(Player, Vec<Team>)>, AppError> {
     let player = Player::try_fetch(id.to_string(), &mut db).await?;
     let teams = player.get_teams(&mut db).await?;
 
-    Ok(Template::render("player", context! { player, teams }))
+    Ok(Json((player, teams)))
 }
 
 #[post("/login", data = "<form>")]

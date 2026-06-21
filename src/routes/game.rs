@@ -1,4 +1,5 @@
 use chrono::Utc;
+use rocket::serde::json::Json;
 use rocket::{get, post, routes};
 use rocket::form::Form;
 use rocket::http::Status;
@@ -23,7 +24,7 @@ pub fn routes() -> Vec<rocket::Route> {
 }
 
 #[get("/games/<id>")]
-async fn view_game(id: &str, mut db: Connection<AppData>, player: Option<Player>) -> Result<Template, AppError> {
+async fn view_game(id: &str, mut db: Connection<AppData>) -> Result<Json<(Game, [Team; 2])>, AppError> {
     let game = Game::try_fetch(id.to_string(), &mut db).await?;
     let teams = game.get_teams(&mut db).await?;
 
@@ -34,13 +35,7 @@ async fn view_game(id: &str, mut db: Connection<AppData>, player: Option<Player>
         Player::try_fetch(teams[1].partner_id.clone(), &mut db).await?
     ];
 
-    // If player is None, both values are false, else they depend on matching IDs
-    let is_captain = [
-        player.as_ref().map_or(false, |p| p.id == teams[0].captain_id),
-        player.as_ref().map_or(false, |p| p.id == teams[1].captain_id)
-    ];
-
-    Ok(Template::render("game", context! { game, teams, players, is_captain }))
+    Ok(Json((game, teams)))
 }
 
 #[get("/games/<id>/accept")]
